@@ -1,16 +1,19 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
-using System.Data;
 
 namespace BlogProject.Data.Entities;
 
 public class User : IdentityUser
 {
-    public int Id { get; set; }
+    public string Id { get; set; }
 
     [Required]
     [MaxLength(50)]
-    public string Username { get; set; }
+    public string FirstName { get; set; }
+
+    [Required]
+    [MaxLength(50)]
+    public string LastName { get; set; }
 
     [Required]
     [EmailAddress]

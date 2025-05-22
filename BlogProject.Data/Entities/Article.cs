@@ -22,7 +22,7 @@ public class Article
     public DateTime? UpdatedDate { get; set; }
 
     // Связи
-    public int UserId { get; set; }
+    public string UserId { get; set; }
     public User User { get; set; }
 
     public ICollection<Tag> Tags { get; set; } // Связь многие ко многим
