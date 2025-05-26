@@ -1,6 +1,4 @@
-﻿using BlogProject.Core.Models.ViewModels.DTO;
-
-namespace BlogProject.Core.Models.ViewModels;
+﻿namespace BlogProject.Core.Models.ViewModels;
 
 public class ArticleViewModel
 {

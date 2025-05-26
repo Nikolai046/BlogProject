@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Identity;
 
 namespace BlogProject.Web.Services;
 
-public class UserPermissions
+public class GetUserPermissions
 {
     private readonly ClaimsPrincipal _user;
     private readonly ApplicationDbContext _context;
     private readonly UserManager<User> _userManager;
 
-    public UserPermissions(ClaimsPrincipal user, ApplicationDbContext context, UserManager<User> userManager)
+    public GetUserPermissions(ClaimsPrincipal user, ApplicationDbContext context, UserManager<User> userManager)
     {
         _user = user;
         _context = context;
