@@ -23,4 +23,8 @@
 		<Folder Include="Db\" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\BlogProject.Core\BlogProject.Core.csproj" />
+	</ItemGroup>
+
 </Project>

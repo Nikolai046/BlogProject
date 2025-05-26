@@ -5,7 +5,7 @@ namespace BlogProject.Data.Entities;
 
 public class User : IdentityUser
 {
-    public string Id { get; set; }
+    //public string Id { get; set; }
 
     [Required]
     [MaxLength(50)]
@@ -17,10 +17,19 @@ public class User : IdentityUser
 
     [Required]
     [EmailAddress]
-    public string Email { get; set; }
-
-    [Required]
-    public string PasswordHash { get; set; }
+    public override string Email
+    {
+        get => base.Email;
+        set
+        {
+            base.Email = value;
+            // Устанавливаем UserName только если он еще не задан
+            if (string.IsNullOrEmpty(base.UserName))
+            {
+                base.UserName = value;
+            }
+        }
+    }
 
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
 
@@ -31,4 +40,10 @@ public class User : IdentityUser
     // Навигационные свойства
     public ICollection<Article> Articles { get; set; }
     public ICollection<Comment> Comments { get; set; }
+
+    public string GetFullName()
+    {
+        return $"{FirstName} {LastName}";
+    }
+
 }
