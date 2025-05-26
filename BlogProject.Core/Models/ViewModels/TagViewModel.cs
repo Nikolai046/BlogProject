@@ -1,4 +1,4 @@
-﻿namespace BlogProject.Core.Models.ViewModels.DTO;
+﻿namespace BlogProject.Core.Models.ViewModels;
 
 public class TagViewModel
 {
