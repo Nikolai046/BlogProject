@@ -1,13 +1,11 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using BlogProject.Core.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using System.Net;
-using BlogProject.Core.Models.ViewModels;
-using Microsoft.AspNetCore.Authorization;
 
 namespace BlogProject.Web.Controllers;
 
-[AllowAnonymous] // Чтобы страница ошибки была доступна всем
+[AllowAnonymous]
 public class ErrorController : Controller
 {
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

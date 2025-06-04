@@ -1,30 +1,21 @@
-using BlogProject.Data;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using BlogProject.Core.Models.ViewModels;
 
 namespace BlogProject.Web.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController() : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly ApplicationDbContext _context;
-
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public Task<IActionResult> Index()
         {
-            _logger = logger;
-            _context = context;
+            if (User.Identity!.IsAuthenticated)
+            {
+                return Task.FromResult<IActionResult>(RedirectToAction("MainPage", "AccountManager"));
+            }
+            else
+            {
+                // Редирект на страницу логина
+                return Task.FromResult<IActionResult>(RedirectToAction("Index", "Login"));
+            }
         }
 
-        public IActionResult Index()
-        {
-            var users = _context.Users.ToList();
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
     }
 }

@@ -2,9 +2,8 @@
 
 namespace BlogProject.Data.Entities;
 
-
 /// <summary>
-/// Представляет статью с заголовком, содержимым, датами создания и обновления, 
+/// Представляет статью с заголовком, содержимым, датами создания и обновления,
 /// а также связями с пользователем, комментариями и тегами статьи.
 /// </summary>
 public class Article
@@ -13,18 +12,18 @@ public class Article
 
     [Required]
     [MaxLength(200)]
-    public string Title { get; set; }
+    public string Title { get; set; } = null!;
 
     [Required]
-    public string Content { get; set; }
-
+    public string Content { get; set; } = null!;
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedDate { get; set; }
 
-    // Связи
-    public string UserId { get; set; }
-    public User User { get; set; }
+    [Required]
+    public string UserId { get; set; } = null!;
 
-    public ICollection<Tag> Tags { get; set; } // Связь многие ко многим
-    public ICollection<Comment> Comments { get; set; } // Связь один ко многим
+    // Связи
+    public virtual User? User { get; set; }
+    public virtual ICollection<Tag>? Tags { get; set; }
+    public virtual ICollection<Comment>? Comments { get; set; }
 }

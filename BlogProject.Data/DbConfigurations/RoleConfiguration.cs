@@ -1,7 +1,6 @@
-﻿using BlogProject.Data.Entities;
+﻿/*
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
 
 namespace BlogProject.Data.DbConfigurations;
 
@@ -27,5 +26,5 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             new Role { Id = 3, Name = "User" }
         );
     }
-
 }
+*/

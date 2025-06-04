@@ -7,16 +7,15 @@ public class Comment
     public int Id { get; set; }
 
     [Required]
-    public string Text { get; set; }
-
+    public required string Text { get; set; }
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedDate { get; set; }
 
-    // Связи
-    public string UserId { get; set; }
-    public User User { get; set; }
-
+    [Required]
+    public string? UserId { get; set; } = string.Empty;
     public int ArticleId { get; set; }
-    public Article Article { get; set; }
 
+    // Связи
+    public virtual User? User { get; set; }
+    public virtual Article? Article { get; set; }
 }

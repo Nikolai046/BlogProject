@@ -6,29 +6,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Data.Methods;
 
-public class UserMethods : IMethods
+public class UserMethods(ApplicationDbContext context, string? currentUserId, UserManager<User> userManager)
+    : IMethods
 {
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<User> _userManager;
-    private readonly string _currentUserId;
-
-    public UserMethods(ApplicationDbContext context, string currentUserId, UserManager<User> userManager)
-    {
-        _context = context;
-        _currentUserId = currentUserId;
-        _userManager = userManager;
-    }
-
     public async Task<(List<ArticleViewModel>, bool)> GetAllArticles(int page, int pageSize = 10)
     {
-        var allArticles = _context.Articles
+        var allArticles = context.Articles
             .Include(a => a.User)
-            .Include(a => a.Comments)
+            .Include(a => a.Comments)!
             .ThenInclude(c => c.User)
-            .Include(a => a.Tags) // Добавляем загрузку тегов
+            .Include(a => a.Tags)
             .OrderByDescending(a => a.CreatedDate);
 
-        // Получаем общее количество для пагинации
+
+        // Получить общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
 
         // Получаем данные страницы
@@ -46,10 +37,10 @@ public class UserMethods : IMethods
                 CreatedDate = a.CreatedDate,
                 UpdatedDate = a.UpdatedDate,
                 UserId = a.UserId,
-                Deletable = a.UserId == _currentUserId,
-                Editable = a.UserId == _currentUserId,
-                Tag = a.Tags.Select(t => new TagViewModel { Text = t.Name }).ToList(), // Проекция тегов
-                Comments = a.Comments.Select(c => new CommentViewModel
+                Deletable = a.UserId == currentUserId,
+                Editable = a.UserId == currentUserId,
+                Tag = a.Tags != null ? a.Tags.Select(t => new TagViewModel { Text = t.Name }).ToList() : new List<TagViewModel>(),
+                Comments = a.Comments != null ? a.Comments.Select(c => new CommentViewModel
                 {
                     CommentId = c.Id,
                     Text = c.Text,
@@ -58,9 +49,9 @@ public class UserMethods : IMethods
                         : "Аноним",
                     CreatedDate = c.CreatedDate,
                     UpdatedDate = c.UpdatedDate,
-                    Deletable = c.UserId == _currentUserId,
-                    Editable = a.UserId == _currentUserId,
-                }).ToList()
+                    Deletable = c.UserId == currentUserId,
+                    Editable = c.UserId == currentUserId,
+                }).ToList() : new List<CommentViewModel>()
             }).ToListAsync();
 
         var hasMore = totalCount > page * pageSize;
@@ -77,18 +68,19 @@ public class UserMethods : IMethods
             .Distinct()
             .ToList();
 
-        if (!normalizedTags.Any())
+
+        if (normalizedTags.Count == 0)
         {
-            return (new List<ArticleViewModel>(), false);
+            return ([], false);
         }
 
-        var allArticles = _context.Articles
+        var allArticles = context.Articles
             .Include(a => a.User)
-            .Include(a => a.Comments)
-                .ThenInclude(c => c.User)
+            .Include(a => a.Comments)!
+            .ThenInclude(c => c.User!)
             .Include(a => a.Tags)
-            .Where(a => a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
             .OrderByDescending(a => a.CreatedDate);
+
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
@@ -108,13 +100,10 @@ public class UserMethods : IMethods
                 CreatedDate = a.CreatedDate,
                 UpdatedDate = a.UpdatedDate,
                 UserId = a.UserId,
-                Deletable = a.UserId == _currentUserId,
-                Editable = a.UserId == _currentUserId,
-                Tag = a.Tags.Select(t => new TagViewModel
-                {
-                    Text = t.Name
-                }).ToList(),
-                Comments = a.Comments.Select(c => new CommentViewModel
+                Deletable = a.UserId == currentUserId,
+                Editable = a.UserId == currentUserId,
+                Tag = a.Tags != null ? a.Tags.Select(t => new TagViewModel { Text = t.Name }).ToList() : new List<TagViewModel>(),
+                Comments = a.Comments != null ? a.Comments.Select(c => new CommentViewModel
                 {
                     CommentId = c.Id,
                     Text = c.Text,
@@ -123,9 +112,9 @@ public class UserMethods : IMethods
                         : "Аноним",
                     CreatedDate = c.CreatedDate,
                     UpdatedDate = c.UpdatedDate,
-                    Deletable = c.UserId == _currentUserId,
-                    Editable = c.UserId == _currentUserId
-                }).ToList()
+                    Deletable = c.UserId == currentUserId,
+                    Editable = c.UserId == currentUserId,
+                }).ToList() : new List<CommentViewModel>()
             }).ToListAsync();
 
         var hasMore = totalCount > page * pageSize;
@@ -136,13 +125,14 @@ public class UserMethods : IMethods
     public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserId(string? userId, int page, int pageSize = 10)
     {
         // Проверка UserID
-        var targetUserId = userId ?? _currentUserId;
+        var targetUserId = userId ?? currentUserId;
 
         // Получаем все статьи из контекста базы данных
-        var allArticles = await _context.Articles
+        var allArticles = await context.Articles
             .Where(m => m.UserId == targetUserId)
-            .Include(m => m.Comments)
+            .Include(m => m.Comments)!
             .ThenInclude(c => c.User)
+            .Include(a => a.Tags)
             .OrderByDescending(m => m.CreatedDate)
             .ToListAsync();
 
@@ -154,37 +144,40 @@ public class UserMethods : IMethods
         // Собираем все уникальные Id авторов из статей и комментариев
         var authorsIds = articles
             .Select(m => m.UserId)
-            .Concat(articles.SelectMany(m => m.Comments).Select(c => c.UserId))
+            .Concat(articles.SelectMany(m => m.Comments!).Select(c => c.UserId))
             .Where(id => id != null)
             .Distinct()
             .ToList();
 
         // Загружаем только нужных пользователей
-        var users = await _userManager.Users
+        var users = await userManager.Users
             .Where(u => authorsIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u);
+            .ToDictionaryAsync(u => u.Id!, u => u);
 
         // Формируем ViewModel
-        var result = articles.Select(m => new ArticleViewModel
+        var result = articles.Select(a => new ArticleViewModel
         {
-            ArticleId = m.Id,
-            Title = m.Title,
-            Content = m.Content,
-            AuthorFullName = users.ContainsKey(m.UserId!) ? users[m.UserId!].GetFullName() : "Аноним",
-            CreatedDate = m.CreatedDate,
-            UpdatedDate = m.UpdatedDate,
-            Deletable = (m.UserId == _currentUserId!),
-            Editable = (m.UserId == _currentUserId!),
-            Comments = m.Comments.Select(c => new CommentViewModel
-            {
-                CommentId = c.Id,
-                Text = c.Text,
-                Author = users.ContainsKey(c.UserId!) ? users[c.UserId!].GetFullName() : "Аноним",
-                CreatedDate = c.CreatedDate,
-                UpdatedDate = c.UpdatedDate,
-                Deletable = (c.UserId == _currentUserId),
-                Editable = (m.UserId == _currentUserId!),
-            }).ToList()
+            ArticleId = a.Id,
+            Title = a.Title,
+            Content = a.Content,
+            AuthorFullName = users.TryGetValue(a.UserId!, out var author) ? author.GetFullName() : "Аноним",
+            CreatedDate = a.CreatedDate,
+            UpdatedDate = a.UpdatedDate,
+            Deletable = (a.UserId == currentUserId!),
+            Editable = (a.UserId == currentUserId!),
+            Tag = a.Tags != null ? a.Tags.Select(t => new TagViewModel { Text = t.Name }).ToList() : [],
+            Comments = a.Comments != null
+        ? a.Comments.Select(c => new CommentViewModel
+        {
+            CommentId = c.Id,
+            Text = c.Text,
+            Author = users.TryGetValue(c.UserId!, out var commentAuthor) ? commentAuthor.GetFullName() : "Аноним",
+            CreatedDate = c.CreatedDate,
+            UpdatedDate = c.UpdatedDate,
+            Deletable = (c.UserId == currentUserId),
+            Editable = (c.UserId == currentUserId!),
+        }).ToList()
+        : []
         }).ToList();
 
         var hasMore = (allArticles.Count / pageSize - page) >= 0;
@@ -194,47 +187,48 @@ public class UserMethods : IMethods
 
     public async Task<ArticleViewModel?> GetArticleById(int articleId)
     {
-        var article = await _context.Articles
+
+        var article = await context.Articles
             .Include(a => a.User)
-            .Include(a => a.Comments)
+            .Include(a => a.Comments)!
             .ThenInclude(c => c.User)
             .Include(a => a.Tags)
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == articleId);
 
-        if (article == null)
-            throw new NotFoundException("Статья не найдена");
 
-        return new ArticleViewModel
-        {
-            ArticleId = article.Id,
-            Title = article.Title,
-            Content = article.Content,
-            AuthorFullName = article.User != null
-                ? $"{article.User.FirstName} {article.User.LastName}"
-                : "Аноним",
-            CreatedDate = article.CreatedDate,
-            UpdatedDate = article.UpdatedDate,
-            UserId = article.UserId,
-            Deletable = article.UserId == _currentUserId,
-            Editable = article.UserId == _currentUserId,
-            Tag = article.Tags.Select(t => new TagViewModel
+        return article == null
+            ? throw new NotFoundException("Статья не найдена")
+            : new ArticleViewModel
             {
-                Text = t.Name
-            }).ToList(),
-            Comments = article.Comments.Select(c => new CommentViewModel
-            {
-                CommentId = c.Id,
-                Text = c.Text,
-                Author = c.User != null
-                    ? $"{c.User.FirstName} {c.User.LastName}"
+                ArticleId = article.Id,
+                Title = article.Title,
+                Content = article.Content,
+                AuthorFullName = article.User != null
+                    ? $"{article.User.FirstName} {article.User.LastName}"
                     : "Аноним",
-                CreatedDate = c.CreatedDate,
-                UpdatedDate = c.UpdatedDate,
-                Deletable = c.UserId == _currentUserId,
-                Editable = c.UserId == _currentUserId
-            }).ToList()
-        };
+                CreatedDate = article.CreatedDate,
+                UpdatedDate = article.UpdatedDate,
+                UserId = article.UserId,
+                Deletable = article.UserId == currentUserId,
+                Editable = article.UserId == currentUserId,
+                Tag = article.Tags != null
+                    ? article.Tags.Select(t => new TagViewModel { Text = t.Name }).ToList() : [],
+                Comments = article.Comments != null
+                    ? article.Comments.Select(c => new CommentViewModel
+                    {
+                        CommentId = c.Id,
+                        Text = c.Text,
+                        Author = c.User != null
+                            ? $"{c.User.FirstName} {c.User.LastName}"
+                            : "Аноним",
+                        CreatedDate = c.CreatedDate,
+                        UpdatedDate = c.UpdatedDate,
+                        Deletable = c.UserId == currentUserId,
+                        Editable = c.UserId == currentUserId
+                    }).ToList()
+                    : []
+            };
     }
 
     public async Task CreateArticle(ArticleViewModel model)
@@ -242,13 +236,15 @@ public class UserMethods : IMethods
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
 
+        if (currentUserId == null) throw new NotFoundException("Пользователь не найден при создании статьи");
+
         var article = new Article
         {
             Title = model.Title,
             Content = model.Content!,
-            UserId = _currentUserId,
+            UserId = currentUserId,
             CreatedDate = DateTime.UtcNow,
-            Tags = new List<Tag>()
+            Tags = []
         };
 
         // Извлекаем теги из модели, фильтруем пустые и дубликаты
@@ -256,14 +252,14 @@ public class UserMethods : IMethods
             .Select(t => t.Text?.Trim())
             .Where(text => !string.IsNullOrEmpty(text))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList() ?? new List<string>();
+            .ToList() ?? [];
 
         foreach (var tagName in tagNames)
         {
             var normalizedTagName = tagName!.ToUpper();
 
-            var existingTag = await _context.Tags
-                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
+            var existingTag = await context.Tags
+                .FirstOrDefaultAsync(t => t.Name.Equals(normalizedTagName, StringComparison.CurrentCultureIgnoreCase));
 
             if (existingTag != null)
             {
@@ -276,13 +272,13 @@ public class UserMethods : IMethods
                     Name = normalizedTagName
                 };
 
-                _context.Tags.Add(newTag);
+                context.Tags.Add(newTag);
                 article.Tags.Add(newTag);
             }
         }
 
-        _context.Articles.Add(article);
-        await _context.SaveChangesAsync();
+        context.Articles.Add(article);
+        await context.SaveChangesAsync();
     }
 
     public async Task EditArticle(int articleId, ArticleViewModel model)
@@ -290,12 +286,9 @@ public class UserMethods : IMethods
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
 
-        var article = await _context.Articles
+        var article = await context.Articles
             .Include(a => a.Tags)
-            .FirstOrDefaultAsync(a => a.Id == articleId && a.UserId == _currentUserId);
-
-        if (article == null)
-            throw new ForbiddenException("Статья не найдена или у вас нет прав на редактирование");
+            .FirstOrDefaultAsync(a => a.Id == articleId && a.UserId == currentUserId) ?? throw new ForbiddenException("Статья не найдена или у вас нет прав на редактирование");
 
         // Обновление основных полей
         article.Title = model.Title;
@@ -303,25 +296,26 @@ public class UserMethods : IMethods
         article.UpdatedDate = DateTime.UtcNow;
 
         // Очистка текущих тегов
-        article.Tags.Clear();
+        article.Tags?.Clear();
 
         // Обработка новых тегов из модели
         var tagNames = model.Tag?
             .Select(t => t.Text?.Trim())
             .Where(text => !string.IsNullOrEmpty(text))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList() ?? new List<string>();
+            .ToList() ?? [];
 
         foreach (var tagName in tagNames)
         {
+            if (tagName == null) continue;
             var normalizedTagName = tagName.ToUpper();
 
-            var existingTag = await _context.Tags
-                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
+            var existingTag = await context.Tags
+                .FirstOrDefaultAsync(t => t.Name.Equals(normalizedTagName, StringComparison.CurrentCultureIgnoreCase));
 
             if (existingTag != null)
             {
-                article.Tags.Add(existingTag);
+                article.Tags?.Add(existingTag);
             }
             else
             {
@@ -330,24 +324,21 @@ public class UserMethods : IMethods
                     Name = normalizedTagName.Trim() // Сохраняем с обрезанными пробелами
                 };
 
-                _context.Tags.Add(newTag); // Добавление нового тега в контекст
-                article.Tags.Add(newTag);
+                context.Tags.Add(newTag); // Добавление нового тега в контекст
+                article.Tags?.Add(newTag);
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task DeleteArticle(int articleId)
     {
-        var article = await _context.Articles
-            .FirstOrDefaultAsync(a => a.Id == articleId && a.UserId == _currentUserId);
+        var article = await context.Articles
+            .FirstOrDefaultAsync(a => a.Id == articleId && a.UserId == currentUserId) ?? throw new ForbiddenException("Статья не найдена или у вас нет прав на удаление");
 
-        if (article == null)
-            throw new ForbiddenException("Статья не найдена или у вас нет прав на удаление");
-
-        _context.Articles.Remove(article);
-        await _context.SaveChangesAsync();
+        context.Articles.Remove(article);
+        await context.SaveChangesAsync();
     }
 
     public async Task CreateComment(int articleId, CommentViewModel model)
@@ -361,13 +352,13 @@ public class UserMethods : IMethods
         var comment = new Comment
         {
             Text = model.Text.Trim(),
-            UserId = _currentUserId,
+            UserId = currentUserId,
             ArticleId = articleId,
             CreatedDate = DateTime.UtcNow
         };
 
-        _context.Comments.Add(comment);
-        await _context.SaveChangesAsync();
+        context.Comments.Add(comment);
+        await context.SaveChangesAsync();
     }
 
     public async Task EditComment(int commentId, CommentViewModel model)
@@ -378,34 +369,28 @@ public class UserMethods : IMethods
         if (string.IsNullOrWhiteSpace(model.Text))
             throw new AppException("Текст комментария не может быть пустым", 400);
 
-        var comment = await _context.Comments
-            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == _currentUserId);
-
-        if (comment == null)
-            throw new ForbiddenException("Комментарий не найден или у вас нет прав на редактирование");
+        var comment = await context.Comments
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == currentUserId) ?? throw new ForbiddenException("Комментарий не найден или у вас нет прав на редактирование");
 
         comment.Text = model.Text.Trim(); // Удаляем начальные/конечные пробелы
         comment.UpdatedDate = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task DeleteComment(int commentId)
     {
-        var comment = await _context.Comments
-            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == _currentUserId);
+        var comment = await context.Comments
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == currentUserId) ?? throw new ForbiddenException("Комментарий не найден или у вас нет прав на удаление");
 
-        if (comment == null)
-            throw new ForbiddenException("Комментарий не найден или у вас нет прав на удаление");
-
-        _context.Comments.Remove(comment);
-        await _context.SaveChangesAsync();
+        context.Comments.Remove(comment);
+        await context.SaveChangesAsync();
     }
 
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
     {
-        var allUsers = _context.Users
-            .Where(u => u.Id != _currentUserId) // Исключаем текущего пользователя
+        var allUsers = context.Users
+            .Where(u => u.Id != currentUserId) // Исключаем текущего пользователя
             .Include(u => u.Articles) // Подключаем статьи для подсчета
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName);
@@ -423,7 +408,7 @@ public class UserMethods : IMethods
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,
-                ArticleCount = u.Articles.Count,
+                ArticleCount = u.Articles != null ? u.Articles.Count : 0,
                 Deletable = false
             })
             .ToListAsync();
@@ -433,14 +418,34 @@ public class UserMethods : IMethods
         return (users, hasMore);
     }
 
+    public async Task<UserViewModel> GetUserInfoAsync(string? userId = null)
+    {
+        userId ??= currentUserId ?? throw new NotFoundException("Пользователь не найден");
+        var deletable = userId == currentUserId;
+
+        var user = await context.Users
+            .Where(u => u.Id == userId)
+            .Include(u => u.Articles)
+            .Select(u => new UserViewModel
+            {
+                UserId = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                ArticleCount = u.Articles != null ? u.Articles.Count : 0,
+                Deletable = deletable
+            })
+            .FirstOrDefaultAsync() ?? throw new NotFoundException("Пользователь не найден");
+
+        return user;
+    }
+
     public async Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile)
     {
-        if (userId != _currentUserId)
+        if (userId != currentUserId)
             throw new ForbiddenException("Редактирование профиля запрещено");
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-            throw new NotFoundException("Пользователь не найден");
+        var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
 
         // Обновление основных полей
         user.FirstName = profile.FirstName;
@@ -450,7 +455,7 @@ public class UserMethods : IMethods
         if (!string.IsNullOrEmpty(profile.NewPassword))
         {
             // Проверка текущего пароля
-            var passwordCheck = await _userManager.CheckPasswordAsync(user, profile.CurrentPassword);
+            var passwordCheck = await userManager.CheckPasswordAsync(user, profile.CurrentPassword);
             if (!passwordCheck)
             {
                 return IdentityResult.Failed(new IdentityError
@@ -460,7 +465,7 @@ public class UserMethods : IMethods
             }
 
             // Смена пароля
-            var changeResult = await _userManager.ChangePasswordAsync(
+            var changeResult = await userManager.ChangePasswordAsync(
                 user,
                 profile.CurrentPassword,
                 profile.NewPassword);
@@ -472,7 +477,7 @@ public class UserMethods : IMethods
         }
 
         // Сохранение изменений профиля
-        var updateResult = await _userManager.UpdateAsync(user);
+        var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
             return updateResult;
@@ -483,13 +488,12 @@ public class UserMethods : IMethods
 
     public async Task DeleteUser(string userId)
     {
-        if (userId != _currentUserId)
+        if (userId != currentUserId)
             throw new ForbiddenException("Удаление пользователя запрещено");
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-            throw new NotFoundException("Пользователь не найден");
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException("Пользователь не найден");
 
-        await _userManager.DeleteAsync(user);
+        await userManager.DeleteAsync(user);
     }
 }

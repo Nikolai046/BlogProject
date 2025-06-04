@@ -9,17 +9,16 @@ public class User : IdentityUser
 
     [Required]
     [MaxLength(50)]
-    public string FirstName { get; set; }
+    public string? FirstName { get; set; }
 
     [Required]
     [MaxLength(50)]
-    public string LastName { get; set; }
-
+    public string? LastName { get; set; }
     [Required]
     [EmailAddress]
-    public override string Email
+    public override required string? Email
     {
-        get => base.Email;
+        get => base.Email!;
         set
         {
             base.Email = value;
@@ -33,17 +32,17 @@ public class User : IdentityUser
 
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
 
-    // Связь с Role
-    public int RoleId { get; set; }
-    public Role Role { get; set; }
+    // public int RoleId { get; set; } = 3;
+
 
     // Навигационные свойства
-    public ICollection<Article> Articles { get; set; }
-    public ICollection<Comment> Comments { get; set; }
+    //  public virtual Role? Role { get; set; }
+    public virtual ICollection<Article>? Articles { get; set; }
+
+    public virtual ICollection<Comment>? Comments { get; set; }
 
     public string GetFullName()
     {
         return $"{FirstName} {LastName}";
     }
-
 }

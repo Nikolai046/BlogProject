@@ -1,15 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿//using Microsoft.AspNetCore.Identity;
+//using System.ComponentModel.DataAnnotations;
 
-namespace BlogProject.Data.Entities;
+//namespace BlogProject.Data.Entities;
 
-public class Role
-{
-    public int Id { get; set; }
+//public class Role : IdentityRole<string>
+//{
+//    public int Id { get; set; }
 
-    [Required]
-    [MaxLength(50)]
-    public string Name { get; set; } // "Admin", "Moderator", "User"
+//    [Required]
+//    [MaxLength(50)]
+//    public required string Name { get; set; } // "Admin", "Moderator", "User"
 
-    // Навигационное свойство
-    public ICollection<User> Users { get; set; }
-}
+//    // Навигационное свойство
+//    public virtual ICollection<User>? Users { get; set; }
+//}

@@ -1,154 +1,129 @@
-using BlogProject.Core.CustomException;
 using BlogProject.Data;
 using BlogProject.Data.Entities;
 using BlogProject.Data.Seeder;
-using Microsoft.AspNetCore.Diagnostics;
+using BlogProject.Web.Middleware;
+using BlogProject.Web.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using System.Net;
-
-// Настройка Serilog до создания WebApplicationBuilder
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information() // Минимальный уровень логирования
-    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", Serilog.Events.LogEventLevel.Information)
-    .Enrich.FromLogContext()
-    .WriteTo.Console() // вывод логов в консоль
-    .WriteTo.File(
-        path: "../Logs/log-.txt", // Путь к файлу лога
-        rollingInterval: RollingInterval.Day, // Создавать новый файл каждый день
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}", // Формат записи
-        retainedFileCountLimit: 7, // Хранить логи за последние 7 дней
-        rollOnFileSizeLimit: true, // Создавать новый файл при достижении лимита размера
-        fileSizeLimitBytes: 10_000_000) // Лимит размера файла (10MB)
-    .CreateLogger();
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Используем Serilog для логирования ASP.NET Core
-    builder.Host.UseSerilog();
+    // Настройки логгинга с использованием Serilog
+    builder.Host.UseSerilog((context, config) =>
+       config.ReadFrom.Configuration(context.Configuration));
 
-    // Add services to the container.
+    // Добавляем поддержку контроллеров и представлений в контейнер служб
     builder.Services.AddControllersWithViews();
 
+    // Настройка DataProtection
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(@"./temp-keys")) // Укажите существующий путь, доступный для записи
+        .SetApplicationName("BlogProject");
+
+    // Добавляем контекст базы данных ApplicationDbContext в контейнер служб
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
-        );
+            options.UseSqlite(
+                builder.Configuration.GetConnectionString("DefaultConnection"),
+                o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
+            )
+            .UseLazyLoadingProxies()
+);
 
-    builder.Services.AddIdentity<User, IdentityRole>(opts =>
-    {
-        opts.Password.RequiredLength = 5;
-        opts.Password.RequireNonAlphanumeric = false;
-        opts.Password.RequireLowercase = false;
-        opts.Password.RequireUppercase = false;
-        opts.Password.RequireDigit = false;
-    }).AddEntityFrameworkStores<ApplicationDbContext>();
+    // Конфигурируем параметры идентификации, используя секцию "Identity" из конфигурации
+    builder.Services.Configure<IdentityOptions>(
+        builder.Configuration.GetSection("Identity"));
 
+    // Добавляем идентификацию для пользователя и роли, используя Entity Framework для хранения данных
+    builder.Services.AddIdentity<User, IdentityRole>(options =>
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
+
+    // Генерация тестовых данных
     builder.Services.AddScoped<TestDataGenerator>();
 
-    builder.Services.AddAuthentication("CookieAuth")
-        .AddCookie("CookieAuth", options =>
-        {
-            options.Cookie.Name = "AuthCookie";
-            options.LoginPath = "/api/Auth/login";
-            options.AccessDeniedPath = "/api/Auth/access-denied";
-        });
-
-    builder.Services.AddAuthorization(options =>
+    // Настройка куки-аутентификации для Identity
+    builder.Services.ConfigureApplicationCookie(options =>
     {
-        options.AddPolicy("RequireAdmin", policy =>
-            policy.RequireRole("Admin"));
+        options.Cookie.Name = "AuthCookie";
+        options.LoginPath = "/Login/Index";
+        options.AccessDeniedPath = "/Error/Index=403&message=Доступ+запрещен";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
     });
 
+    // Добавляем билдер для авторизации в сервисы
+    builder.Services.AddAuthorization();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<TestDataGenerator>();
+    builder.Services.AddScoped<GetUserPermissions>();
+    builder.Services.AddScoped<UserClaimsService>();
 
-
+    // Создаем экземпляр приложения с помощью билдера
     var app = builder.Build();
 
-    // Configure the HTTP request pipeline.
+    // Используем пользовательский middleware для обработки исключений.
+    app.UseCustomExceptionHandlingMiddleware();
+
+
     if (!app.Environment.IsDevelopment())
     {
-        // Используем кастомный обработчик исключений
-        app.UseExceptionHandler(errorApp =>
-        {
-            errorApp.Run(async context =>
-            {
-                var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-                var exception = exceptionHandlerPathFeature?.Error;
-
-                // Получаем ILogger для логирования
-                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-
-                var (statusCode, message) = exception switch
-                {
-                    NotFoundException notFoundEx => (404, notFoundEx.Message),
-                    ForbiddenException forbiddenEx => (403, forbiddenEx.Message),
-                    DatabaseException dbEx => (500, dbEx.Message), // Обработка DatabaseException
-                    ValidationException valEx => (400, valEx.Message), // Обработка ValidationException
-                    AppException appEx => (appEx.StatusCode, appEx.Message),
-                    _ => (500, "Произошла внутренняя ошибка сервера.")
-                };
-
-                // Логируем исключение
-                logger.LogError("Ошибка: {ErrorMessage}, Код состояния: {StatusCode}, Путь: {Path}, Исключение: {ExceptionType}, Сообщение исключения: {ExceptionMessage}, StackTrace: {StackTrace}",
-                                 message,
-                                 statusCode,
-                                 exceptionHandlerPathFeature?.Path,
-                                 exception?.GetType().FullName,
-                                 exception?.Message,
-                                 exception?.StackTrace);
-
-
-                context.Response.StatusCode = statusCode; // Устанавливаем код ответа перед редиректом
-                var encodedMessage = WebUtility.UrlEncode(message);
-                context.Response.Redirect($"/Error/Index?statusCode={statusCode}&message={encodedMessage}");
-            });
-        });
+        // Включаем HSTS (HTTP Strict Transport Security) для повышения безопасности
         app.UseHsts();
     }
     else
     {
-        // В режиме разработки - DeveloperExceptionPage для более детальной информации
+        // Включаем страницу исключений для разработчиков, чтобы видеть ошибки во время разработки
         app.UseDeveloperExceptionPage();
     }
 
+    // Включает перенаправление HTTP на HTTPS
     app.UseHttpsRedirection();
+
+    // Позволяет приложению обслуживать статические файлы
     app.UseStaticFiles();
 
+    // Настраивает маршрутизацию для приложения
     app.UseRouting();
 
+    // Включает аутентификацию пользователей
     app.UseAuthentication();
+
+    // Включает авторизацию пользователей
     app.UseAuthorization();
 
     // Применение миграций и генерация тестовых данных
     using (var scope = app.Services.CreateScope())
     {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        db.Database.Migrate(); // Раскомментируйте, если миграции должны применяться при старте
         if (app.Environment.IsDevelopment())
         {
-            var dataGen = scope.ServiceProvider.GetRequiredService<TestDataGenerator>();
-            await dataGen.Generate();
+            //var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            //db.Database.Migrate();
+            //var dataGen = scope.ServiceProvider.GetRequiredService<TestDataGenerator>();
+            //await dataGen.Generate();
         }
     }
 
+    // Настройка маршрута для контроллеров
     app.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
+         name: "default",
+         pattern: "{controller=Home}/{action=Index}/{id?}");
 
-
-
-    Log.Information("Приложение запускается...");
-    app.Run();
-
+    Log.Information("\n\n\nПриложение запускается...");
+    await app.RunAsync();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Приложение не смогло запуститься.");
+    Log.Fatal(ex, "\n\n\nПриложение не смогло запуститься.");
 }
 finally
 {
-    Log.CloseAndFlush(); // Для записи всех логов перед завершением работы
+    // Для записи всех логов перед завершением работы
+    Log.CloseAndFlush();
 }

@@ -18,6 +18,5 @@ public class TagConfiguration : IEntityTypeConfiguration<Tag>
         builder.Property(t => t.Name)
             .IsRequired() // Поле обязательно
             .HasMaxLength(100); // Максимальная длина строки 100 символов
-
     }
 }

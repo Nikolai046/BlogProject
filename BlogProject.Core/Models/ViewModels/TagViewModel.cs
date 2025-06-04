@@ -3,5 +3,4 @@
 public class TagViewModel
 {
     public string? Text { get; set; }
-
 }

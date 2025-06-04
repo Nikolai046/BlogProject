@@ -4,20 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Data;
 
-public class ApplicationDbContext : IdentityDbContext<User>
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<User>(options)
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
+    public new DbSet<User> Users { get; set; }
+    // public new DbSet<Role> Roles { get; set; }
     public DbSet<Article> Articles { get; set; }
     public DbSet<Tag> Tags { get; set; }
     public DbSet<Comment> Comments { get; set; }
-
-
-    public ApplicationDbContext() { }
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-    {
-        //Database.EnsureCreated();
-    }
 
     /// <summary>
     /// Настраивает модели Entity Framework, применяя конфигурации из сборки, в которой определен контекст базы данных.
@@ -28,4 +21,5 @@ public class ApplicationDbContext : IdentityDbContext<User>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
+
 }

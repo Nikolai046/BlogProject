@@ -96,39 +96,6 @@ namespace BlogProject.Data.Migrations
                     b.ToTable("Comments", (string)null);
                 });
 
-            modelBuilder.Entity("BlogProject.Data.Entities.Role", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Roles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Administrator"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Moderator"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "User"
-                        });
-                });
-
             modelBuilder.Entity("BlogProject.Data.Entities.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -201,9 +168,6 @@ namespace BlogProject.Data.Migrations
                     b.Property<DateTime>("RegistrationDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
 
@@ -222,8 +186,6 @@ namespace BlogProject.Data.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
-
-                    b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -401,17 +363,6 @@ namespace BlogProject.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("BlogProject.Data.Entities.User", b =>
-                {
-                    b.HasOne("BlogProject.Data.Entities.Role", "Role")
-                        .WithMany("Users")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -466,11 +417,6 @@ namespace BlogProject.Data.Migrations
             modelBuilder.Entity("BlogProject.Data.Entities.Article", b =>
                 {
                     b.Navigation("Comments");
-                });
-
-            modelBuilder.Entity("BlogProject.Data.Entities.Role", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("BlogProject.Data.Entities.User", b =>

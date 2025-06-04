@@ -1,0 +1,125 @@
+﻿@model (List<ArticleViewModel> Articles, bool HasMore)
+@using BlogProject.Core.Models.ViewModels
+
+@{
+    ViewData["Title"] = "Ваши статьи";
+    var currentPage = int.Parse(Context.Request.Query["page"].FirstOrDefault() ?? "1");
+    const int pageSize = 10;
+}
+
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Статьи</h1>
+
+        @if (Model.Articles?.Any() != true)
+        {
+            <div class="alert alert-info" role="alert">
+                Статей пока нет.
+            </div>
+        }
+        else
+        {
+            @foreach (var article in Model.Articles)
+            {
+                <div class="card article-card shadow-sm">
+                    <div class="card-body">
+                        <!-- Теги -->
+                        <div class="mb-2">
+                            @if (article.Tag?.Any() == true)
+                            {
+                                foreach (var tag in article.Tag)
+                                {
+                                    <span class="badge bg-primary tag-badge">@tag.Text</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Тегов нет</span>
+                            }
+                        </div>
+
+                        <!-- Заголовок и действия -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="card-title">@article.Title</h2>
+                            @if (article.Deletable)
+                            {
+                                <div>
+                                    <a asp-action="EditArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" class="action-icon" title="Редактировать">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    </a>
+                                    <a asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" class="action-icon" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить эту статью?');">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Информация об авторе и дате -->
+                        <p class="card-text text-muted">
+                            Автор: @article.AuthorFullName | Создано: @article.CreatedDate.ToString("dd.MM.yyyy HH:mm") | Обновлено: @article.UpdatedDate?.ToString("dd.MM.yyyy HH:mm") ?? ""
+                        </p>
+
+                        <!-- Содержимое статьи -->
+                        <p class="card-text">@article.Content</p>
+
+                        <!-- Комментарии -->
+                        <h5 class="mt-4">Комментарии</h5>
+                        @if (article.Comments?.Any() != true)
+                        {
+                            <p class="text-muted">Комментариев пока нет.</p>
+                        }
+                        else
+                        {
+                            foreach (var comment in article.Comments)
+                            {
+                                <div class="comment">
+                                    <p>@comment.Text</p>
+                                    <p class="text-muted small">
+                                        Автор: @comment.Author | Создано: @comment.CreatedDate.ToString("dd.MM.yyyy HH:mm") | Обновлено: @article.UpdatedDate?.ToString("dd.MM.yyyy HH:mm") ?? "Не обновлялось"
+                                    </p>
+                                    @if (comment.Deletable)
+                                    {
+                                        <div>
+                                            <a asp-action="EditComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" class="action-icon" title="Редактировать">
+                                                <i class="bi bi-pencil-square text-primary"></i>
+                                            </a>
+                                            <a asp-action="DeleteComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" class="action-icon" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Пагинация -->
+            <nav aria-label="Пагинация статей">
+                <ul class="pagination justify-content-center">
+                    @if (currentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize">Предыдущая</a>
+                        </li>
+                    }
+                    <li class="page-item disabled">
+                        <span class="page-link">Страница @currentPage</span>
+                    </li>
+                    @if (Model.HasMore)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+
+<!-- Подключение Bootstrap JS и Popper -->
+    
+    @* <script src="https://cdn.jsdelivr.net/npm/popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script> *@
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+</body>

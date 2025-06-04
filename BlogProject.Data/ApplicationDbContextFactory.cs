@@ -1,17 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace BlogProject.Data;
-
 public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+        // Создаем конфигурацию вручную
+        IConfiguration configuration = new ConfigurationBuilder()
+            .SetBasePath((Path.Combine(Directory.GetCurrentDirectory(), "..", "BlogProject.Web")))
+            .AddJsonFile("appsettings.json")
+            .Build();
 
-        // Используем SQLite и указываем корректный путь
-        optionsBuilder.UseSqlite("Data Source=Db/blog_database.db");
+        // Получаем строку подключения
+        string connectionString = configuration.GetConnectionString("DefaultConnection")
+                                  ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+        // Настраиваем контекст
+        var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+        optionsBuilder.UseSqlite(connectionString);
 
         return new ApplicationDbContext(optionsBuilder.Options);
     }
 }
+

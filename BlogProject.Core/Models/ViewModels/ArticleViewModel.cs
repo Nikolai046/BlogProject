@@ -3,12 +3,12 @@
 public class ArticleViewModel
 {
     public int ArticleId { get; set; }
-    public string Title { get; set; }
-    public string? Content { get; set; }
+    public required string Title { get; set; }
+    public required string Content { get; set; }
     public string? AuthorFullName { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
-    public string UserId { get; set; }
+    public string? UserId { get; set; }
     public bool Deletable { get; set; }
     public bool Editable { get; set; }
 

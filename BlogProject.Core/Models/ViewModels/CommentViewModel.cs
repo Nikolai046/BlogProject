@@ -8,5 +8,5 @@ public class CommentViewModel
     public DateTime? UpdatedDate { get; set; }
     public bool Editable { get; set; }
     public bool Deletable { get; set; }
-    public string Author { get; set; }
+    public string? Author { get; set; }
 }

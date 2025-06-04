@@ -1,0 +1,92 @@
+﻿@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BlogProject.Web</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/BlogProject.Web.styles.css" asp-append-version="true" />
+    @Html.AntiForgeryToken()
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-bottom box-shadow-lg bg-white">
+            <div class="container-fluid">
+                <a class="navbar-brand" style="background-color:#f0f0f0; padding: 5px 10px;" asp-area="" asp-controller="Home" asp-action="Index">Персональный блог</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse d-sm-inline-flex justify-content-between collapse">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="CreateArticle">Создать статью</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Поиск
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item text-dark" href="#">по пользователю</a></li>
+                                <li><a class="dropdown-item text-dark" href="#">по тегам</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="EditProfile">Редактировать пользователя</a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <form asp-controller="Login" asp-action="Logout" method="post">
+                                <button type="submit" class="nav-link text-primary btn btn-link border-0 p-0">
+                                    Выйти
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+
+        @{
+            // Получаем данные из claims
+            var fullName = User.FindFirst(ClaimTypes.GivenName)?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            var articlesCount = User.FindFirst("ArticlesCount")?.Value;
+        }
+
+
+        <div class="user-info-bar bg-light border-bottom">
+            <div class="container-fluid px-0">
+                <div class="user-info-items">
+                    <span class="user-info-item">Пользователь: @fullName</span>
+                    <span class="user-info-item">Роль: @string.Join(", ", roles)</span>
+                    <span class="user-info-item">Email: @email</span>
+                    <span class="user-info-item">Количество статей: @articlesCount</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            © 2025 - Персональный блог
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @*  <script src="~/js/userinfo.js" asp-append-version="true"></script> *@
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

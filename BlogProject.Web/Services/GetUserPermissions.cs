@@ -1,32 +1,62 @@
-﻿using System.Security.Claims;
+﻿using BlogProject.Core.CustomException;
 using BlogProject.Data;
 using BlogProject.Data.Entities;
 using BlogProject.Data.Methods;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace BlogProject.Web.Services;
 
-public class GetUserPermissions
+public class GetUserPermissions(IHttpContextAccessor httpContextAccessor, ApplicationDbContext context, UserManager<User> userManager)
 {
-    private readonly ClaimsPrincipal _user;
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<User> _userManager;
-
-    public GetUserPermissions(ClaimsPrincipal user, ApplicationDbContext context, UserManager<User> userManager)
-    {
-        _user = user;
-        _context = context;
-        _userManager = userManager;
-    }
-
     public IMethods GetMethods()
     {
-        var userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var user = httpContextAccessor.HttpContext?.User
+                   ?? throw new NotFoundException("Идентификатор пользователя не может быть пустым.");
 
-        if (_user.IsInRole("Administrator"))
-            return new AdministratorMethods(_context, userId, _userManager);
-        if (_user.IsInRole("Moderator"))
-            return new ModeratorMethods(_context, userId, _userManager);
-        return new UserMethods(_context, userId, _userManager);
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (user.IsInRole("Administrator"))
+            return new AdministratorMethods(context, userId, userManager);
+        if (user.IsInRole("Moderator"))
+            return new ModeratorMethods(context, userId, userManager);
+        return new UserMethods(context, userId, userManager);
+    }
+
+    //public async Task<IMethods> GetMethods(User user)
+    //{
+    //    if (user == null)
+    //    {
+    //        throw new ArgumentNullException(nameof(user), "User cannot be null");
+    //    }
+
+    //    // Получаем все роли пользователя
+    //    var userRoles = await userManager.GetRolesAsync(user);
+
+    //    // Определяем приоритет ролей
+    //    if (userRoles.Contains("Administrator"))
+    //    {
+    //        return new AdministratorMethods(context, user.Id, userManager);
+    //    }
+    //    if (userRoles.Contains("Moderator"))
+    //    {
+    //        return new ModeratorMethods(context, user.Id, userManager);
+    //    }
+
+    //    return new UserMethods(context, user.Id, userManager);
+
+    //}
+
+    // Для вызовов с объектом User (используется в UserClaimsService)
+    public IMethods GetMethods(User user, IList<string> roles)
+    {
+        if (user == null)
+            throw new NotFoundException("Идентификатор пользователя не может быть пустым.");
+
+        if (roles.Contains("Administrator"))
+            return new AdministratorMethods(context, user.Id, userManager);
+        if (roles.Contains("Moderator"))
+            return new ModeratorMethods(context, user.Id, userManager);
+        return new UserMethods(context, user.Id, userManager);
     }
 }

@@ -1,42 +1,133 @@
 ﻿using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Data;
+using System.Security.Claims;
+using Serilog;
 
 namespace BlogProject.Data.Seeder;
 
-public class TestDataGenerator
+public class TestDataGenerator(UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
 {
-    private readonly UserManager<User> _userManager;
-
-    public TestDataGenerator(UserManager<User> userManager)
-    {
-        _userManager = userManager;
-    }
-
     public async Task Generate()
     {
-        var isDatabaseEmpty = !await _userManager.Users.AnyAsync();
-        if (!isDatabaseEmpty)
+        if (await userManager.Users.AnyAsync())
             return;
 
-        var users = new List<User>
-    {
-        new User { FirstName = "Ivan", LastName = "Ivanov", Email = "ivan.ivanov@example.com", RoleId = 1},
-        new User { FirstName = "Petr", LastName = "Petrov", Email = "petr.petrov@example.com", RoleId = 3},
-        new User { FirstName = "Sidor", LastName = "Sidorov", Email = "sidor.sidorov@example.com", RoleId = 3}
-    };
+        // Создаем роли, если они не существуют
+        await EnsureRolesCreated();
 
-        foreach (var user in users)
+        var usersWithRoles = new List<(User User, string Role, string Password)>
         {
-            var result = await _userManager.CreateAsync(user, "123456");
+            (
+                new() {
+                    FirstName = "Ivan",
+                    LastName = "Ivanov",
+                    Email = "ivan.ivanov@example.com",
+                    UserName = "ivan.ivanov@example.com"
+                },
+                "Administrator",
+                "123456"
+            ),
+            (
+                new() {
+                    FirstName = "Petr",
+                    LastName = "Petrov",
+                    Email = "petr.petrov@example.com",
+                    UserName = "petr.petrov@example.com"
+                },
+                "Moderator",
+                "123456"
+            ),
+            (
+                new() {
+                    FirstName = "Sidor",
+                    LastName = "Sidorov",
+                    Email = "sidor.sidorov@example.com",
+                    UserName = "sidor.sidorov@example.com"
+                },
+                "User",
+                "123456"
+            )
+        };
+
+        foreach (var (user, role, password) in usersWithRoles)
+        {
+            // Создаем пользователя
+            var result = await userManager.CreateAsync(user, password);
+
             if (!result.Succeeded)
             {
-                // Логируйте или выводите ошибки
-                foreach (var error in result.Errors)
-                {
-                    Console.WriteLine($"{error.Code}: {error.Description}");
-                }
+                LogErrors("Ошибка создания пользователя", result.Errors);
+                continue;
+            }
+
+            // Назначаем роль
+            var roleResult = await userManager.AddToRoleAsync(user, role);
+
+            if (!roleResult.Succeeded)
+            {
+                LogErrors($"Ошибка назначения роли {role}", roleResult.Errors);
+            }
+            else
+            {
+                Log.Information(
+                    "Пользователь {FirstName} {LastName} создан с ролью {Role}",
+                    user.FirstName, user.LastName, role);
+            }
+
+            // Создаем claims для пользователя
+            await ClaimsCreated(user, role);
+        }
+    }
+
+    private async Task EnsureRolesCreated()
+    {
+        var roles = new[] { "Administrator", "Moderator", "User" };
+
+        foreach (var role in roles)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole(role));
+                Log.Information("Создана роль: {Role}", role);
             }
         }
     }
+
+    private static void LogErrors(string prefix, IEnumerable<IdentityError> errors)
+    {
+        foreach (var error in errors)
+        {
+            Log.Error("{Prefix}: {Code} - {Description}", prefix, error.Code, error.Description);
+            Console.WriteLine($"{prefix}: {error.Code} - {error.Description}");
+        }
+    }
+
+    private async Task ClaimsCreated(User user, string userRole)
+    {
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Email, user.Email!),
+            new(ClaimTypes.Name, user.UserName!),
+            new(ClaimTypes.GivenName, $"{user.FirstName} {user.LastName}"),
+            new(ClaimTypes.Role, userRole),
+            new("ArticlesCount", "0"),
+        };
+
+        var claimResult = await userManager.AddClaimsAsync(user, claims);
+        if (!claimResult.Succeeded)
+        {
+            Log.Error($"Ошибка создания клайма для пользователя {user.FirstName} {user.LastName}, {claimResult.Errors}");
+        }
+        else
+        {
+            Log.Information(
+                "Клайм для пользователя {FirstName} {LastName} успешно создан ", user.FirstName, user.LastName);
+        }
+    }
+
 }
