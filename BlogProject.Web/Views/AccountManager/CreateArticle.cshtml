@@ -1,0 +1,76 @@
+﻿@using System.Security.Claims  
+@using Microsoft.AspNetCore.Mvc.TagHelpers  
+@model BlogProject.Core.Models.ViewModels.ArticleViewModel;
+
+<form asp-action="CreateArticle" method="post">  
+    <div class="form-group">  
+        <label asp-for="Title">Заголовок</label>  
+        <input asp-for="Title" class="form-control" />  
+        <span asp-validation-for="Title" class="text-danger"></span>  
+    </div>  
+    <div class="form-group">  
+        <label asp-for="Content">Содержание</label>  
+        <textarea asp-for="Content" class="form-control"></textarea>  
+        <span asp-validation-for="Content" class="text-danger"></span>  
+    </div>  
+    <div class="form-group">  
+        <label asp-for="AuthorFullName">Автор</label>  
+        <input asp-for="AuthorFullName" class="form-control" readonly value="@User.FindFirstValue("FullName")" />  
+    </div>  
+    <input type="hidden" asp-for="UserId" value="@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)" />  
+
+    <!-- Теги -->  
+    <div class="form-group tags-container">  
+        <h3>Теги</h3>  
+        @if (Model.Tag != null)  
+        {  
+            var tagList = Model.Tag.ToList(); // Преобразуем в List для индексирования  
+            for (int i = 0; i < tagList.Count; i++)  
+            {  
+                <div class="tag-item">  
+                    <label>Тег @(i + 1)</label>  
+                    <input asp-for="@tagList[i].Text" class="form-control" />  
+                    <span asp-validation-for="@tagList[i].Text" class="text-danger"></span>  
+                </div>  
+            }  
+        }  
+        <button type="button" onclick="addTag()">Добавить тег</button>  
+    </div>  
+
+    <!-- Комментарии (опционально, если они добавляются при создании статьи) -->  
+    <div class="form-group comments-container">  
+        <h3>Комментарии</h3>  
+        @if (Model.Comments != null)  
+        {  
+            var commentsList = Model.Comments.ToList(); // Преобразуем в List для индексирования  
+            for (int i = 0; i < commentsList.Count; i++)  
+            {  
+                <div class="comment-item">  
+                    <input type="hidden" asp-for="@commentsList[i].CommentId" />  
+                    <label>Комментарий @(i + 1)</label>  
+                    <input asp-for="@commentsList[i].Text" class="form-control" />  
+                    <span asp-validation-for="@commentsList[i].Text" class="text-danger"></span>  
+                    <input asp-for="@commentsList[i].Author" class="form-control" readonly value="@User.FindFirst(ClaimTypes.Name)?.Value" />  
+                </div>  
+            }  
+        }  
+    </div>  
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>  
+</form>  
+
+@section Scripts {  
+    <script>  
+        function addTag() {  
+            var index = document.querySelectorAll('[name*="Tag"]').length / 2; // Учитываем input и span  
+            var newTag = `  
+                <div class="tag-item">  
+                    <label>Тег ${index + 1}</label>  
+                    <input name="Tag[${index}].Text" class="form-control" />  
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Tag[${index}].Text" data-valmsg-replace="true"></span>  
+                </div>`;  
+            document.querySelector('.tags-container').insertAdjacentHTML('beforeend', newTag);  
+        }  
+    </script>  
+    <partial name="_ValidationScriptsPartial" />  
+}

@@ -1,7 +1,7 @@
-﻿using BlogProject.Web.Services;
+﻿using BlogProject.Core.Models.ViewModels;
+using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using BlogProject.Core.Models.ViewModels;
+using System.Security.Claims;
 
 namespace BlogProject.Web.Controllers;
 
@@ -20,15 +20,25 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateComment(ArticleViewModel model)
+    public async Task<IActionResult> CreateArticle(ArticleViewModel model)
     {
         throw new NotImplementedException();
     }
 
-    [HttpGet]
-    public async Task<IActionResult> CreateComment()
+    [HttpGet("create_article")]
+    public async Task<IActionResult> CreateArticle()
     {
-        throw new NotImplementedException();
+        var model = new ArticleViewModel
+        {
+            AuthorFullName = User.FindFirstValue("FullName") ?? User.Identity.Name,
+            UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            Title = string.Empty,
+            Content = string.Empty,
+            CreatedDate = DateTime.UtcNow,
+            Tag = new List<TagViewModel> { new TagViewModel() }, // Начальный тег
+            Comments = new List<CommentViewModel>() // Пустой список комментариев
+        };
+        return View(model);
     }
 
     public async Task<IActionResult> EditComment()
