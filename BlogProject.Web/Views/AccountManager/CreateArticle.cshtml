@@ -3,6 +3,12 @@
 @model BlogProject.Core.Models.ViewModels.ArticleViewModel;
 
 <form asp-action="CreateArticle" method="post">  
+    
+    <div class="form-group">  
+        <label asp-for="AuthorFullName">Автор</label>  
+        <input asp-for="AuthorFullName" class="form-control" readonly value="@User.FindFirstValue(ClaimTypes.GivenName)" />
+    </div>  
+    <input type="hidden" asp-for="UserId" value="@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)" /> 
     <div class="form-group">  
         <label asp-for="Title">Заголовок</label>  
         <input asp-for="Title" class="form-control" />  
@@ -13,12 +19,7 @@
         <textarea asp-for="Content" class="form-control"></textarea>  
         <span asp-validation-for="Content" class="text-danger"></span>  
     </div>  
-    <div class="form-group">  
-        <label asp-for="AuthorFullName">Автор</label>  
-        <input asp-for="AuthorFullName" class="form-control" readonly value="@User.FindFirstValue("FullName")" />  
-    </div>  
-    <input type="hidden" asp-for="UserId" value="@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)" />  
-
+    
     <!-- Теги -->  
     <div class="form-group tags-container">  
         <h3>Теги</h3>  
