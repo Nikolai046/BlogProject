@@ -1,77 +1,100 @@
-﻿@using System.Security.Claims  
-@using Microsoft.AspNetCore.Mvc.TagHelpers  
-@model BlogProject.Core.Models.ViewModels.ArticleViewModel;
+﻿@using System.Security.Claims
+@model BlogProject.Core.Models.ViewModels.ArticleViewModel
+@{
+    // Преобразуем теги из модели в строку, разделённую пробелами
+    string initialTags = Model.Tag != null
+        ? string.Join(" ", Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text))
+        : "";
+}
 
-<form asp-action="CreateArticle" method="post">  
-    
-    <div class="form-group">  
-        <label asp-for="AuthorFullName">Автор</label>  
+<form asp-action="CreateArticle" method="post">
+    <div class="form-group">
+        <label asp-for="AuthorFullName">Автор</label>
         <input asp-for="AuthorFullName" class="form-control" readonly value="@User.FindFirstValue(ClaimTypes.GivenName)" />
-    </div>  
-    <input type="hidden" asp-for="UserId" value="@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)" /> 
-    <div class="form-group">  
-        <label asp-for="Title">Заголовок</label>  
-        <input asp-for="Title" class="form-control" />  
-        <span asp-validation-for="Title" class="text-danger"></span>  
-    </div>  
-    <div class="form-group">  
-        <label asp-for="Content">Содержание</label>  
-        <textarea asp-for="Content" class="form-control"></textarea>  
-        <span asp-validation-for="Content" class="text-danger"></span>  
-    </div>  
-    
-    <!-- Теги -->  
-    <div class="form-group tags-container">  
-        <h3>Теги</h3>  
-        @if (Model.Tag != null)  
-        {  
-            var tagList = Model.Tag.ToList(); // Преобразуем в List для индексирования  
-            for (int i = 0; i < tagList.Count; i++)  
-            {  
-                <div class="tag-item">  
-                    <label>Тег @(i + 1)</label>  
-                    <input asp-for="@tagList[i].Text" class="form-control" />  
-                    <span asp-validation-for="@tagList[i].Text" class="text-danger"></span>  
-                </div>  
-            }  
-        }  
-        <button type="button" onclick="addTag()">Добавить тег</button>  
-    </div>  
+    </div>
+    <input type="hidden" asp-for="UserId" value="@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)" />
+    <div class="form-group tags-container">
+        <label for="tagInput">Теги</label>
+        <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off" value="@initialTags" />
+        <input type="hidden" id="tagList" name="TagList" />
+        <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
+    </div>
+    <div class="form-group">
+        <label asp-for="Title">Заголовок</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Content">Содержание</label>
+        <textarea asp-for="Content" class="form-control"></textarea>
+        <span asp-validation-for="Content" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
+</form>
 
-    <!-- Комментарии (опционально, если они добавляются при создании статьи) -->  
-    <div class="form-group comments-container">  
-        <h3>Комментарии</h3>  
-        @if (Model.Comments != null)  
-        {  
-            var commentsList = Model.Comments.ToList(); // Преобразуем в List для индексирования  
-            for (int i = 0; i < commentsList.Count; i++)  
-            {  
-                <div class="comment-item">  
-                    <input type="hidden" asp-for="@commentsList[i].CommentId" />  
-                    <label>Комментарий @(i + 1)</label>  
-                    <input asp-for="@commentsList[i].Text" class="form-control" />  
-                    <span asp-validation-for="@commentsList[i].Text" class="text-danger"></span>  
-                    <input asp-for="@commentsList[i].Author" class="form-control" readonly value="@User.FindFirst(ClaimTypes.Name)?.Value" />  
-                </div>  
-            }  
-        }  
-    </div>  
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tagInput = document.getElementById('tagInput');
+            const tagDisplay = document.getElementById('tagDisplay');
+            const tagListInput = document.getElementById('tagList');
 
-    <button type="submit" class="btn btn-primary">Сохранить</button>  
-</form>  
+            // 1. Инициализируем массив тегов из модели
+            const initialTags = @Html.Raw(Model.Tag != null ? System.Text.Json.JsonSerializer.Serialize(Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text)) : "[]");
 
-@section Scripts {  
-    <script>  
-        function addTag() {  
-            var index = document.querySelectorAll('[name*="Tag"]').length / 2; // Учитываем input и span  
-            var newTag = `  
-                <div class="tag-item">  
-                    <label>Тег ${index + 1}</label>  
-                    <input name="Tag[${index}].Text" class="form-control" />  
-                    <span class="text-danger field-validation-valid" data-valmsg-for="Tag[${index}].Text" data-valmsg-replace="true"></span>  
-                </div>`;  
-            document.querySelector('.tags-container').insertAdjacentHTML('beforeend', newTag);  
-        }  
-    </script>  
-    <partial name="_ValidationScriptsPartial" />  
+            // 2. Нормализуем начальные теги: приводим к ВЕРХНЕМУ РЕГИСТРУ и обеспечиваем уникальность
+            const upperCaseInitialTags = initialTags.map(tag => tag.toUpperCase());
+            let tags = [...new Set(upperCaseInitialTags)]; // 'tags' теперь содержит уникальные теги в верхнем регистре
+
+            // Функция для отображения тегов
+            function renderTags() {
+                tagDisplay.innerHTML = '';
+                tags.forEach((tag, index) => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'badge bg-info text-white rounded-pill d-inline-block';
+                    tagElement.innerHTML = `${tag} <span class="ms-1" data-index="${index}" style="cursor: pointer;">×</span>`;
+                    tagDisplay.appendChild(tagElement);
+                });
+                tagListInput.value = JSON.stringify(tags);
+            }
+
+            // Функция для удаления тега по клику на "x"
+            function removeTag(index) {
+                tags.splice(index, 1);
+                tagInput.value = tags.join(' ') + (tags.length > 0 ? ' ' : '');
+                renderTags();
+            }
+
+            // Главный обработчик, который синхронизирует все изменения
+            tagInput.addEventListener('input', () => {
+                const currentWords = tagInput.value.split(/\s+/).filter(Boolean);
+
+                // Нормализуем ввод: приводим к ВЕРХНЕМУ РЕГИСТРУ
+                const upperCaseWords = currentWords.map(word => word.toUpperCase());
+
+                // Обеспечиваем уникальность (регистр не важен)
+                const uniqueWords = [...new Set(upperCaseWords)];
+
+                // Полностью обновляем массив тегов
+                tags = uniqueWords;
+
+                renderTags();
+            });
+
+            // Делегирование события клика для удаления тегов
+            tagDisplay.addEventListener('click', function(e) {
+                if (e.target && e.target.matches('span[data-index]')) {
+                    const index = parseInt(e.target.getAttribute('data-index'), 10);
+                    removeTag(index);
+                }
+            });
+
+            // Первоначальная отрисовка при загрузке страницы
+            if (tags.length > 0) {
+                tagInput.value = tags.join(' ') + ' ';
+                renderTags();
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
 }

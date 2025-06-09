@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.6" />
+    <PackageReference Include="BootstrapIcons.AspNetCore" Version="1.11.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
@@ -31,12 +32,6 @@
   <ItemGroup>
     <ProjectReference Include="..\BlogProject.Data\BlogProject.Data.csproj" />
     <ProjectReference Include="..\BlogProject.Data\BlogProject.Data.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="wwwroot\js\userinfo.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>

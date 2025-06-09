@@ -3,6 +3,7 @@ using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace BlogProject.Data.Methods;
 
@@ -259,7 +260,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             var normalizedTagName = tagName!.ToUpper();
 
             var existingTag = await context.Tags
-                .FirstOrDefaultAsync(t => t.Name.Equals(normalizedTagName, StringComparison.CurrentCultureIgnoreCase));
+                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
 
             if (existingTag != null)
             {
@@ -278,6 +279,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
         }
 
         context.Articles.Add(article);
+
         await context.SaveChangesAsync();
     }
 
@@ -370,7 +372,9 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             throw new AppException("Текст комментария не может быть пустым", 400);
 
         var comment = await context.Comments
-            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == currentUserId) ?? throw new ForbiddenException("Комментарий не найден или у вас нет прав на редактирование");
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == currentUserId);
+        if (comment == null)
+            throw new ForbiddenException("Комментарий не найден или у вас нет прав на редактирование");
 
         comment.Text = model.Text.Trim(); // Удаляем начальные/конечные пробелы
         comment.UpdatedDate = DateTime.UtcNow;

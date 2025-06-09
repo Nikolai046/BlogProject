@@ -1,5 +1,7 @@
 ﻿@model (List<ArticleViewModel> Articles, bool HasMore)
 @using BlogProject.Core.Models.ViewModels
+@using Microsoft.CodeAnalysis.Scripting
+
 
 @{
     ViewData["Title"] = "Ваши статьи";
@@ -7,63 +9,75 @@
     const int pageSize = 10;
 }
 
-<body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Статьи</h1>
+<div class="container mt-5">
+    <h1 class="mb-4">Статьи</h1>
 
-        @if (Model.Articles?.Any() != true)
+    @if (Model.Articles?.Any() != true)
+    {
+        <div class="alert alert-info" role="alert">
+            Статей пока нет.
+        </div>
+    }
+    else
+    {
+        @foreach (var article in Model.Articles)
         {
-            <div class="alert alert-info" role="alert">
-                Статей пока нет.
-            </div>
-        }
-        else
-        {
-            @foreach (var article in Model.Articles)
-            {
-                <div class="card article-card shadow-sm">
-                    <div class="card-body">
-                        <!-- Теги -->
-                        <div class="mb-2">
-                            @if (article.Tag?.Any() == true)
+            <div class="card article-card shadow-sm">
+                <div class="card-body">
+                    <!-- Теги -->
+                    <div class="mb-2">
+                        @if (article.Tag?.Any() == true)
+                        {
+                            foreach (var tag in article.Tag)
                             {
-                                foreach (var tag in article.Tag)
-                                {
-                                    <span class="badge bg-primary tag-badge">@tag.Text</span>
-                                }
+                                <span class="badge bg-primary tag-badge">@tag.Text</span>
                             }
-                            else
-                            {
-                                <span class="text-muted">Тегов нет</span>
-                            }
-                        </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Тегов нет</span>
+                        }
+                    </div>
 
-                        <!-- Заголовок и действия -->
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h2 class="card-title">@article.Title</h2>
+                    <!-- Заголовок и действия -->
+                    <div class="d-flex justify-content-between align-items-center bg-light">
+                        <h2 class="card-title">@article.Title</h2>
+                        <div>
+                            @if (article.Editable)
+                            {
+                                <form asp-action="EditArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" method="post" class="d-inline">
+                                    <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Редактировать">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    </button>
+                                </form>
+                            }
                             @if (article.Deletable)
                             {
-                                <div>
-                                    <a asp-action="EditArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" class="action-icon" title="Редактировать">
-                                        <i class="bi bi-pencil-square text-primary"></i>
-                                    </a>
-                                    <a asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" class="action-icon" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить эту статью?');">
+                                <form asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" method="post" class="d-inline">
+                                    <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                                            onclick="return confirm('Вы уверены, что хотите удалить эту статью?');">
                                         <i class="bi bi-trash text-danger"></i>
-                                    </a>
-                                </div>
+                                    </button>
+                                </form>
                             }
                         </div>
+                    </div>
 
-                        <!-- Информация об авторе и дате -->
-                        <p class="card-text text-muted">
-                            Автор: @article.AuthorFullName | Создано: @article.CreatedDate.ToString("dd.MM.yyyy HH:mm") | Обновлено: @article.UpdatedDate?.ToString("dd.MM.yyyy HH:mm") ?? ""
-                        </p>
+                    <!-- Информация об авторе и дате -->
+                    <p class="card-text text-muted">
+                        Автор: @article.AuthorFullName | Создано: @article.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                        @if (article.UpdatedDate != null)
+                        {
+                            @: | Обновлено: @article.UpdatedDate?.ToString("dd.MM.yyyy HH:mm")
+                        }
+                    </p>
 
-                        <!-- Содержимое статьи -->
-                        <p class="card-text">@article.Content</p>
+                    <!-- Содержимое статьи -->
+                    <p class="card-text" style="white-space: pre-wrap;">@article.Content</p>
 
-                        <!-- Комментарии -->
-                        <h5 class="mt-4">Комментарии</h5>
+                    <!-- Комментарии -->
+                    <h5 class="mt-4">Комментарии</h5>
+                    <div id="comments-section-@article.ArticleId">
                         @if (article.Comments?.Any() != true)
                         {
                             <p class="text-muted">Комментариев пока нет.</p>
@@ -72,54 +86,176 @@
                         {
                             foreach (var comment in article.Comments)
                             {
-                                <div class="comment">
-                                    <p>@comment.Text</p>
-                                    <p class="text-muted small">
-                                        Автор: @comment.Author | Создано: @comment.CreatedDate.ToString("dd.MM.yyyy HH:mm") | Обновлено: @article.UpdatedDate?.ToString("dd.MM.yyyy HH:mm") ?? "Не обновлялось"
-                                    </p>
-                                    @if (comment.Deletable)
-                                    {
+                                <div class="comment" data-comment-id="@comment.CommentId" data-article-id="@article.ArticleId">
+                                    <div class="d-flex justify-content-between align-items-center bg-light mt-2">
+                                        <p class="text-muted small">
+                                            Автор: @comment.Author | Создано: @comment.CreatedDate?.ToString("dd.MM.yyyy HH:mm")
+                                            @if (comment.UpdatedDate != null)
+                                            {
+                                                @: | Обновлено: @comment.UpdatedDate?.ToString("dd.MM.yyyy HH:mm")
+                                            }
+                                        </p>
                                         <div>
-                                            <a asp-action="EditComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" class="action-icon" title="Редактировать">
+                                            @if (comment.Editable)
+                                            {
+                                     
+                                                <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                                                        onclick="editComment('@article.ArticleId', '@comment.CommentId')">
                                                 <i class="bi bi-pencil-square text-primary"></i>
-                                            </a>
-                                            <a asp-action="DeleteComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" class="action-icon" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
-                                                <i class="bi bi-trash text-danger"></i>
-                                            </a>
+                                                </button>
+                                                
+                                            }
+                                            @if (comment.Deletable)
+                                            {
+                                                <form asp-action="DeleteComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" method="post" class="d-inline">
+                                                    <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                                                            onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
+                                                        <i class="bi bi-trash text-danger"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         </div>
-                                    }
+                                    </div>
+                                    <p class="comment-text card-text" style="white-space: pre-wrap;"> @comment.Text</p>
                                 </div>
+
                             }
                         }
                     </div>
+                    <!-- Форма для добавления комментария -->
+                    <!-- AJAX-форма для добавления комментария -->
+                    <div class="form-group">
+                        <label for="commentText">Ваш комментарий:</label>
+                        <textarea class="form-control" rows="3" id="commentText-@article.ArticleId" required></textarea>
+                        <button type="button" class="btn btn-primary mt-2" onclick="addComment('@article.ArticleId')">Комментировать</button>
+                    </div>
+
                 </div>
+            </div>
+        }
+
+        <!-- Пагинация -->
+        <nav aria-label="Пагинация статей">
+            <ul class="pagination justify-content-center">
+                @if (currentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize">Предыдущая</a>
+                    </li>
+                }
+                <li class="page-item disabled">
+                    <span class="page-link">Страница @currentPage</span>
+                </li>
+                @if (Model.HasMore)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Скрипт для добавления комментария
+        function addComment(articleId) {
+            var commentText = $('#commentText-' + articleId).val();
+            if (commentText.trim() === '') {
+                alert('Введите текст комментария.');
+                return;
+            }
+            $.ajax({
+                url: '/AccountManager/create_comment',
+                type: 'POST',
+                data: { ArticleId: articleId, Text: commentText },
+                success: function(response) {
+                    // Обновляем только секцию комментариев
+                    $('#comments-section-' + articleId).html(response);
+                    $('#commentText-' + articleId).val('');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Ошибка:', xhr.responseText);
+                }
+            });
+        }
+
+        // Скрипт для редактирования комментария
+        function editComment(articleId, commentId) {
+            var commentDiv = $(".comment[data-comment-id='" + commentId + "']");
+            var commentText = commentDiv.find('.comment-text');
+            var oldText = commentText.text().trim();
+
+            // Проверяем, есть ли уже существующее поле редактирования
+            var editField = commentDiv.find('textarea');
+            if (editField.length > 0) {
+                return; // Редактор уже открыт, пропускаем открытие второго раза
             }
 
-            <!-- Пагинация -->
-            <nav aria-label="Пагинация статей">
-                <ul class="pagination justify-content-center">
-                    @if (currentPage > 1)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize">Предыдущая</a>
-                        </li>
-                    }
-                    <li class="page-item disabled">
-                        <span class="page-link">Страница @currentPage</span>
-                    </li>
-                    @if (Model.HasMore)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
-    </div>
+            // Показываем поле ввода
+            editField = $('<textarea>', {
+                class: 'form-control',
+                cols: '40',
+                rows: '3'
+            }).val(oldText);
 
-<!-- Подключение Bootstrap JS и Popper -->
-    
-    @* <script src="https://cdn.jsdelivr.net/npm/popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script> *@
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
-</body>
+            // Создаем кнопки "Сохранить" и "Отмена"
+            var saveBtn = $('<button>', {
+                type: 'button',
+                class: 'btn btn-primary my-2',
+                text: 'Сохранить'
+            });
+
+            var cancelBtn = $('<button>', {
+                type: 'button',
+                class: 'btn btn-secondary my-2',
+                text: 'Отмена'
+            });
+
+            // Заменяем текст комментария на поле ввода и кнопки
+            commentText.replaceWith(editField);
+            commentDiv.append(saveBtn).append(cancelBtn);
+
+            // Обработчик сохранения комментария
+            saveBtn.on('click', function() {
+                var editedText = editField.val().trim();
+                if (editedText !== '') {
+                    $.ajax({
+                        url: '/AccountManager/edit_comment',
+                        type: 'POST',
+                        data: { CommentId: commentId, Text: editedText, ArticleId: articleId },
+                        success: function(response) {
+                            // Обновляем текст комментария
+                            commentDiv.find('.comment-text').text(editedText);
+                            // Возвращаем исходное состояние
+                            var newCommentText = $('<p>', {
+                                class: 'comment-text card-text',
+                                style: 'white-space: pre-wrap;'
+                            }).text(editedText);
+                            editField.replaceWith(newCommentText);
+                            saveBtn.remove();
+                            cancelBtn.remove();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Ошибка:', xhr.responseText);
+                            alert('Произошла ошибка при сохранении комментария.');
+
+                        }
+                    });
+                } else {
+                    alert('Введите текст комментария.');
+                }
+            });
+
+            // Обработчик отмены редактирования
+            cancelBtn.on('click', function() {
+                // Возвращаем исходный текст комментария и удаляем кнопки
+                editField.replaceWith(commentText.clone(true));
+                saveBtn.remove();
+                cancelBtn.remove();
+            });
+        }
+    </script>
+
+};
