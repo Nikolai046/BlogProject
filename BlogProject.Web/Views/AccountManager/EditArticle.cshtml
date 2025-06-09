@@ -1,36 +1,42 @@
-﻿@using System.Security.Claims
-@model BlogProject.Core.Models.ViewModels.ArticleViewModel
+﻿@model BlogProject.Core.Models.ViewModels.ArticleViewModel
 @{
+    ViewData["Title"] = "Персональный блог - Редактирование статьи";
     // Преобразуем теги из модели в строку, разделённую пробелами
     string initialTags = Model.Tag != null
         ? string.Join(" ", Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text))
         : "";
 }
 
-<form asp-action="EditArticle" asp-route-id="@Model.ArticleId" asp-route-page="@ViewBag.Page" method="post">
-    <div class="form-group">
-        <label asp-for="AuthorFullName">Автор</label>
-        <input asp-for="AuthorFullName" class="form-control" readonly value="@Model.AuthorFullName" />
-    </div>
-    <input type="hidden" asp-for="UserId" value="@Model.UserId" />
-    <div class="form-group tags-container">
-        <label for="tagInput">Теги</label>
-        <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off" value="@initialTags" />
-        <input type="hidden" id="tagList" name="TagList" />
-        <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
-    </div>
-    <div class="form-group">
-        <label asp-for="Title">Заголовок</label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Content">Содержание</label>
-        <textarea asp-for="Content" class="form-control"></textarea>
-        <span asp-validation-for="Content" class="text-danger"></span>
-    </div>
-    <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
-</form>
+<div class="container mt-5">
+    <h1 class="mb-4">Редактирование статьи</h1>
+    <form asp-action="EditArticle" asp-route-page="@ViewBag.Page" method="post">
+        <div class="form-group">
+            <label asp-for="AuthorFullName">Автор</label>
+            <input asp-for="AuthorFullName" class="form-control" readonly value="@Model.AuthorFullName" />
+        </div>
+        <input type="hidden" asp-for="UserId" value="@Model.UserId" />
+        <div class="form-group tags-container">
+            <label for="tagInput">Теги</label>
+            <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off" value="@initialTags" />
+            <input type="hidden" id="tagList" name="TagList" />
+            <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Title">Заголовок</label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Content">Содержание</label>
+            <textarea asp-for="Content" class="form-control"></textarea>
+            <span asp-validation-for="Content" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
+        <button type="button" class="btn btn-secondary mt-3" onclick="window.location.href='@Url.Action("MainPage", "AccountManager", new { page = ViewBag.Page, articleId = Model.ArticleId })'">Отмена</button>
+    </form>
+
+
+</div>
 
 @section Scripts {
     <script>
@@ -40,7 +46,10 @@
             const tagListInput = document.getElementById('tagList');
 
             // 1. Инициализируем массив тегов из модели
-            const initialTags = @Html.Raw(Model.Tag != null ? System.Text.Json.JsonSerializer.Serialize(Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text)) : "[]");
+            const initialTags = @Html.Raw(Model.Tag != null ?
+                System.Text.Json.JsonSerializer
+                    .Serialize(Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text))
+                        .Select(t => t.Text)) : "[]");
 
             // 2. Нормализуем начальные теги: приводим к ВЕРХНЕМУ РЕГИСТРУ и обеспечиваем уникальность
             const upperCaseInitialTags = initialTags.map(tag => tag.toUpperCase());

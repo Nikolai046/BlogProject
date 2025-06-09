@@ -1,10 +1,9 @@
 ﻿@model (List<ArticleViewModel> Articles, bool HasMore)
 @using BlogProject.Core.Models.ViewModels
-@using Microsoft.CodeAnalysis.Scripting
 
 
 @{
-    ViewData["Title"] = "Ваши статьи";
+    ViewData["Title"] = "Персональный блог - Статьи";
     var currentPage = int.Parse(Context.Request.Query["page"].FirstOrDefault() ?? "1");
     const int pageSize = 10;
 }
@@ -98,7 +97,6 @@
                                         <div>
                                             @if (comment.Editable)
                                             {
-                                     
                                                 <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
                                                         onclick="editComment('@article.ArticleId', '@comment.CommentId')">
                                                 <i class="bi bi-pencil-square text-primary"></i>

@@ -60,6 +60,11 @@ public interface IMethods
     Task EditComment(int commentId, CommentViewModel model);
 
     /// <summary>
+    /// Удаляет комментарий по его ID. Доступ зависит от роли.
+    /// </summary>
+    Task DeleteComment(int commentId);
+
+    /// <summary>
     /// Редактирует профиль пользователя по его ID. Доступ зависит от роли.
     /// </summary>
     Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile);

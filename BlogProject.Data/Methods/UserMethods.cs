@@ -313,7 +313,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             var normalizedTagName = tagName.ToUpper();
 
             var existingTag = await context.Tags
-                .FirstOrDefaultAsync(t => t.Name.Equals(normalizedTagName, StringComparison.CurrentCultureIgnoreCase));
+                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
 
             if (existingTag != null)
             {

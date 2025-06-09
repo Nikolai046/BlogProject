@@ -1,14 +1,15 @@
 ﻿using BlogProject.Core.Models.ViewModels;
-using BlogProject.Data.Entities;
 using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using BlogProject.Data.Entities;
 
 namespace BlogProject.Web.Controllers;
 
-
+[Authorize]
 [Route("[controller]")]
 public class AccountManagerController(GetUserPermissions permissions) : Controller
 {
@@ -34,7 +35,7 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
             Title = string.Empty,
             Content = string.Empty,
             CreatedDate = DateTime.Now,
-            Tag = new List<TagViewModel> { new TagViewModel() },
+            Tag = new List<TagViewModel> { new() },
             Comments = new List<CommentViewModel>()
         };
         return View(model);
@@ -50,7 +51,7 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
             model.Tag = tags?
                 .Where(t => !string.IsNullOrEmpty(t) && t != "null")
                 .Select(t => new TagViewModel { Text = t })
-                .ToList() ?? new List<TagViewModel>();
+                .ToList() ?? [];
         }
         if (!ModelState.IsValid) return View(model);
         var methods = permissions.GetMethods();
@@ -80,16 +81,15 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
             model.Tag = tags?
                 .Where(t => !string.IsNullOrEmpty(t) && t != "null")
                 .Select(t => new TagViewModel { Text = t })
-                .ToList() ?? new List<TagViewModel>();
+                .ToList() ?? [];
         }
         var methods = permissions.GetMethods();
         await methods.EditArticle(articleId, model);
 
-        
 
-        return RedirectToAction("MainPage", new { page = page, articleId = model.ArticleId });
 
-//        return RedirectToAction("MainPage", "AccountManager");
+        return RedirectToAction("MainPage", new { page, articleId = model.ArticleId });
+
     }
 
 
@@ -112,7 +112,7 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
     }
 
     [HttpPost("edit_comment")]
-    public async Task<IActionResult> EditComment(int articleId, int commentId, string text)
+    public async Task<IActionResult> EditComment(int commentId, string text)
     {
 
         // Добавляем комментарий к статье
@@ -123,9 +123,6 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         var methods = permissions.GetMethods();
         await methods.EditComment(commentId, comment);
 
-        //var updatedArticle = await methods.GetArticleById(articleId);
-
-        //return PartialView("_CommentsPartial", updatedArticle);
         return Ok();
 
     }
@@ -135,9 +132,12 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         throw new NotImplementedException();
     }
 
-    public async Task<IActionResult> DeleteComment()
+    [HttpPost("delete_comment")]
+    public async Task<IActionResult> DeleteComment(int id)
     {
-        throw new NotImplementedException();
+        var methods = permissions.GetMethods();
+        await methods.DeleteComment(id);
+        return Ok();
     }
 
 
