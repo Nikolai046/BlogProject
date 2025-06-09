@@ -16,7 +16,7 @@ public class Article
 
     [Required]
     public string Content { get; set; } = null!;
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
     public DateTime? UpdatedDate { get; set; }
 
     [Required]

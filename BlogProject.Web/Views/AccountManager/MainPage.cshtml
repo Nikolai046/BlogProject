@@ -22,7 +22,7 @@
     {
         @foreach (var article in Model.Articles)
         {
-            <div class="card article-card shadow-sm">
+            <div id="article-@article.ArticleId" class="card article-card shadow-sm">
                 <div class="card-body">
                     <!-- Теги -->
                     <div class="mb-2">
@@ -45,7 +45,7 @@
                         <div>
                             @if (article.Editable)
                             {
-                                <form asp-action="EditArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" method="post" class="d-inline">
+                                <form asp-action="EditArticle" asp-controller="AccountManager" asp-route-id="@article.ArticleId" asp-route-page="@currentPage" method="get" class="d-inline">
                                     <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Редактировать">
                                         <i class="bi bi-pencil-square text-primary"></i>
                                     </button>
@@ -186,11 +186,12 @@
             var commentDiv = $(".comment[data-comment-id='" + commentId + "']");
             var commentText = commentDiv.find('.comment-text');
             var oldText = commentText.text().trim();
+            var dateInfo = commentDiv.find('.text-muted.small');
 
             // Проверяем, есть ли уже существующее поле редактирования
             var editField = commentDiv.find('textarea');
             if (editField.length > 0) {
-                return; // Редактор уже открыт, пропускаем открытие второго раза
+                return;
             }
 
             // Показываем поле ввода
@@ -233,12 +234,29 @@
                                 class: 'comment-text card-text',
                                 style: 'white-space: pre-wrap;'
                             }).text(editedText);
+
                             editField.replaceWith(newCommentText);
+
+                            // Форматируем текущую дату в формате dd.MM.yyyy HH:mm
+                            var now = new Date();
+                            var day = String(now.getDate()).padStart(2, '0');
+                            var month = String(now.getMonth() + 1).padStart(2, '0');
+                            var year = now.getFullYear();
+                            var hours = String(now.getHours()).padStart(2, '0');
+                            var minutes = String(now.getMinutes()).padStart(2, '0');
+                            var formattedDate = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+                           // Обновляем дату комментария
+                            var currentDateText = dateInfo.text();
+                            var createdPart = currentDateText.split(' | Обновлено:')[0];
+                            var newDateText = createdPart + ' | Обновлено: ' + formattedDate;
+                            dateInfo.text(newDateText);
+
                             saveBtn.remove();
                             cancelBtn.remove();
                         },
                         error: function(xhr, status, error) {
-                            console.error('Ошибка:', xhr.responseText);
+                            console.error('Ошибка при сохранении комментария:', xhr.responseText);
                             alert('Произошла ошибка при сохранении комментария.');
 
                         }
@@ -256,6 +274,17 @@
                 cancelBtn.remove();
             });
         }
+
+        // Скрипт для прокрутки страницы к заданной статье
+        $(document).ready(function() {
+            var articleId = '@ViewBag.ArticleId';
+            if (articleId) {
+                var element = document.getElementById('article-' + articleId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
     </script>
 
 };

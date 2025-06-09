@@ -241,7 +241,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             Title = model.Title,
             Content = model.Content!,
             UserId = currentUserId,
-            CreatedDate = DateTime.UtcNow,
+            CreatedDate = DateTime.Now,
             Tags = []
         };
 
@@ -291,7 +291,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Обновление основных полей
         article.Title = model.Title;
         article.Content = model.Content;
-        article.UpdatedDate = DateTime.UtcNow;
+        article.UpdatedDate = DateTime.Now;
 
         // Очистка текущих тегов
         article.Tags?.Clear();
@@ -351,7 +351,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             Text = model.Text.Trim(),
             UserId = currentUserId,
             ArticleId = articleId,
-            CreatedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now
         };
 
         context.Comments.Add(comment);
@@ -371,7 +371,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         comment.Text = model.Text.Trim(); // Удаляем начальные/конечные пробелы
 
-        comment.UpdatedDate = DateTime.UtcNow;
+        comment.UpdatedDate = DateTime.Now;
 
         await context.SaveChangesAsync();
     }

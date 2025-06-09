@@ -5,8 +5,6 @@ namespace BlogProject.Data.Entities;
 
 public class User : IdentityUser
 {
-    //public string Id { get; set; }
-
     [Required]
     [MaxLength(50)]
     public string? FirstName { get; set; }
@@ -30,13 +28,8 @@ public class User : IdentityUser
         }
     }
 
-    public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
+    public DateTime RegistrationDate { get; set; } = DateTime.Now;
 
-    // public int RoleId { get; set; } = 3;
-
-
-    // Навигационные свойства
-    //  public virtual Role? Role { get; set; }
     public virtual ICollection<Article>? Articles { get; set; }
 
     public virtual ICollection<Comment>? Comments { get; set; }

@@ -248,7 +248,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             Title = model.Title,
             Content = model.Content!,
             UserId = currentUserId,
-            CreatedDate = DateTime.UtcNow,
+            CreatedDate = DateTime.Now,
             Tags = []
         };
 
@@ -298,7 +298,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         // Обновление основных полей
         article.Title = model.Title;
         article.Content = model.Content;
-        article.UpdatedDate = DateTime.UtcNow;
+        article.UpdatedDate = DateTime.Now;
 
         // Очистка текущих тегов
         article.Tags?.Clear();
@@ -359,7 +359,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             Text = model.Text.Trim(),
             UserId = currentUserId,
             ArticleId = articleId,
-            CreatedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now
         };
 
         context.Comments.Add(comment);
@@ -378,7 +378,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             .FirstOrDefaultAsync(c => c.Id == commentId) ?? throw new ForbiddenException("Комментарий не найден");
         comment.Text = model.Text.Trim(); // Удаляем начальные/конечные пробелы
 
-        comment.UpdatedDate = DateTime.UtcNow;
+        comment.UpdatedDate = DateTime.Now;
 
         await context.SaveChangesAsync();
     }

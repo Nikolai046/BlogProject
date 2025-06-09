@@ -23,32 +23,7 @@ public class GetUserPermissions(IHttpContextAccessor httpContextAccessor, Applic
         return new UserMethods(context, userId, userManager);
     }
 
-    //public async Task<IMethods> GetMethods(User user)
-    //{
-    //    if (user == null)
-    //    {
-    //        throw new ArgumentNullException(nameof(user), "User cannot be null");
-    //    }
-
-    //    // Получаем все роли пользователя
-    //    var userRoles = await userManager.GetRolesAsync(user);
-
-    //    // Определяем приоритет ролей
-    //    if (userRoles.Contains("Administrator"))
-    //    {
-    //        return new AdministratorMethods(context, user.Id, userManager);
-    //    }
-    //    if (userRoles.Contains("Moderator"))
-    //    {
-    //        return new ModeratorMethods(context, user.Id, userManager);
-    //    }
-
-    //    return new UserMethods(context, user.Id, userManager);
-
-    //}
-
-    // Для вызовов с объектом User (используется в UserClaimsService)
-    public IMethods GetMethods(User user, IList<string> roles)
+   public IMethods GetMethods(User user, IList<string> roles)
     {
         if (user == null)
             throw new NotFoundException("Идентификатор пользователя не может быть пустым.");

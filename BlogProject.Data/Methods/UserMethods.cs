@@ -244,7 +244,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             Title = model.Title,
             Content = model.Content!,
             UserId = currentUserId,
-            CreatedDate = DateTime.UtcNow,
+            CreatedDate = DateTime.Now,
             Tags = []
         };
 
@@ -295,7 +295,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
         // Обновление основных полей
         article.Title = model.Title;
         article.Content = model.Content;
-        article.UpdatedDate = DateTime.UtcNow;
+        article.UpdatedDate = DateTime.Now;
 
         // Очистка текущих тегов
         article.Tags?.Clear();
@@ -356,7 +356,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             Text = model.Text.Trim(),
             UserId = currentUserId,
             ArticleId = articleId,
-            CreatedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now
         };
 
         context.Comments.Add(comment);
@@ -377,7 +377,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             throw new ForbiddenException("Комментарий не найден или у вас нет прав на редактирование");
 
         comment.Text = model.Text.Trim(); // Удаляем начальные/конечные пробелы
-        comment.UpdatedDate = DateTime.UtcNow;
+        comment.UpdatedDate = DateTime.Now;
 
         await context.SaveChangesAsync();
     }

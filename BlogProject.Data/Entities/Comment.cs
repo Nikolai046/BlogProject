@@ -8,7 +8,7 @@ public class Comment
 
     [Required]
     public required string Text { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
     public DateTime? UpdatedDate { get; set; }
 
     [Required]

@@ -1,0 +1,100 @@
+﻿@using System.Security.Claims
+@model BlogProject.Core.Models.ViewModels.ArticleViewModel
+@{
+    // Преобразуем теги из модели в строку, разделённую пробелами
+    string initialTags = Model.Tag != null
+        ? string.Join(" ", Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text))
+        : "";
+}
+
+<form asp-action="EditArticle" asp-route-id="@Model.ArticleId" asp-route-page="@ViewBag.Page" method="post">
+    <div class="form-group">
+        <label asp-for="AuthorFullName">Автор</label>
+        <input asp-for="AuthorFullName" class="form-control" readonly value="@Model.AuthorFullName" />
+    </div>
+    <input type="hidden" asp-for="UserId" value="@Model.UserId" />
+    <div class="form-group tags-container">
+        <label for="tagInput">Теги</label>
+        <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off" value="@initialTags" />
+        <input type="hidden" id="tagList" name="TagList" />
+        <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
+    </div>
+    <div class="form-group">
+        <label asp-for="Title">Заголовок</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Content">Содержание</label>
+        <textarea asp-for="Content" class="form-control"></textarea>
+        <span asp-validation-for="Content" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tagInput = document.getElementById('tagInput');
+            const tagDisplay = document.getElementById('tagDisplay');
+            const tagListInput = document.getElementById('tagList');
+
+            // 1. Инициализируем массив тегов из модели
+            const initialTags = @Html.Raw(Model.Tag != null ? System.Text.Json.JsonSerializer.Serialize(Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text)) : "[]");
+
+            // 2. Нормализуем начальные теги: приводим к ВЕРХНЕМУ РЕГИСТРУ и обеспечиваем уникальность
+            const upperCaseInitialTags = initialTags.map(tag => tag.toUpperCase());
+            let tags = [...new Set(upperCaseInitialTags)]; // 'tags' теперь содержит уникальные теги в верхнем регистре
+
+            // Функция для отображения тегов
+            function renderTags() {
+                tagDisplay.innerHTML = '';
+                tags.forEach((tag, index) => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'badge bg-info text-white rounded-pill d-inline-block';
+                    tagElement.innerHTML = `${tag} <span class="ms-1" data-index="${index}" style="cursor: pointer;">×</span>`;
+                    tagDisplay.appendChild(tagElement);
+                });
+                tagListInput.value = JSON.stringify(tags);
+            }
+
+            // Функция для удаления тега по клику на "x"
+            function removeTag(index) {
+                tags.splice(index, 1);
+                tagInput.value = tags.join(' ') + (tags.length > 0 ? ' ' : '');
+                renderTags();
+            }
+
+            // Главный обработчик, который синхронизирует все изменения
+            tagInput.addEventListener('input', () => {
+                const currentWords = tagInput.value.split(/\s+/).filter(Boolean);
+
+                // Нормализуем ввод: приводим к ВЕРХНЕМУ РЕГИСТРУ
+                const upperCaseWords = currentWords.map(word => word.toUpperCase());
+
+                // Обеспечиваем уникальность (регистр не важен)
+                const uniqueWords = [...new Set(upperCaseWords)];
+
+                // Полностью обновляем массив тегов
+                tags = uniqueWords;
+
+                renderTags();
+            });
+
+            // Делегирование события клика для удаления тегов
+            tagDisplay.addEventListener('click', function(e) {
+                if (e.target && e.target.matches('span[data-index]')) {
+                    const index = parseInt(e.target.getAttribute('data-index'), 10);
+                    removeTag(index);
+                }
+            });
+
+            // Первоначальная отрисовка при загрузке страницы
+            if (tags.length > 0) {
+                tagInput.value = tags.join(' ') + ' ';
+                renderTags();
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

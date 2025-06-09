@@ -1,9 +1,10 @@
 ﻿using BlogProject.Core.Models.ViewModels;
+using BlogProject.Data.Entities;
 using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using System.Security.Claims;
 using System.Text.Json;
-using Serilog;
 
 namespace BlogProject.Web.Controllers;
 
@@ -13,12 +14,30 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
 {
 
     [HttpGet("main_page")]
-    public async Task<IActionResult> MainPage(int page = 1, int pageSize = 10)
+    public async Task<IActionResult> MainPage(int page = 1, int pageSize = 10, int? articleId = null)
     {
         var methods = permissions.GetMethods();
         var result = await methods.GetAllArticles(page, pageSize);
+        ViewBag.ArticleId = articleId;
+
         return View(result);
 
+    }
+
+    [HttpGet("create_article")]
+    public IActionResult CreateArticle()
+    {
+        var model = new ArticleViewModel
+        {
+            AuthorFullName = User.FindFirstValue(ClaimTypes.GivenName),
+            UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            Title = string.Empty,
+            Content = string.Empty,
+            CreatedDate = DateTime.Now,
+            Tag = new List<TagViewModel> { new TagViewModel() },
+            Comments = new List<CommentViewModel>()
+        };
+        return View(model);
     }
 
     [HttpPost("create_article")]
@@ -41,21 +60,39 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
 
     }
 
-    [HttpGet("create_article")]
-    public IActionResult CreateArticle()
+    [HttpGet("edit_article/{id}/{page?}")]
+    public IActionResult EditArticle([FromRoute] int id, [FromRoute] int page)
     {
-        var model = new ArticleViewModel
-        {
-            AuthorFullName = User.FindFirstValue(ClaimTypes.GivenName),
-            UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
-            Title = string.Empty,
-            Content = string.Empty,
-            CreatedDate = DateTime.UtcNow,
-            Tag = new List<TagViewModel> { new TagViewModel() },
-            Comments = new List<CommentViewModel>()
-        };
+        var methods = permissions.GetMethods();
+        var model = methods.GetArticleById(id).Result;
+        ViewBag.Page = page;
         return View(model);
     }
+
+    [HttpPost("edit_article/{articleId}/{page?}")]
+    public async Task<IActionResult> EditArticle(ArticleViewModel model, string tagList, [FromRoute] int articleId, [FromRoute] int page)
+    {
+
+        if (!ModelState.IsValid) return View(model);
+        if (!string.IsNullOrEmpty(tagList))
+        {
+            var tags = JsonSerializer.Deserialize<List<string>>(tagList);
+            model.Tag = tags?
+                .Where(t => !string.IsNullOrEmpty(t) && t != "null")
+                .Select(t => new TagViewModel { Text = t })
+                .ToList() ?? new List<TagViewModel>();
+        }
+        var methods = permissions.GetMethods();
+        await methods.EditArticle(articleId, model);
+
+        
+
+        return RedirectToAction("MainPage", new { page = page, articleId = model.ArticleId });
+
+//        return RedirectToAction("MainPage", "AccountManager");
+    }
+
+
 
     [HttpPost("create_comment")]
     public async Task<IActionResult> CreateComment(int articleId, string text)
@@ -103,10 +140,6 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         throw new NotImplementedException();
     }
 
-    public async Task<IActionResult> EditArticle()
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<IActionResult> DeleteArticle()
     {
