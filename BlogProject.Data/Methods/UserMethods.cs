@@ -23,6 +23,10 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
         // Получить общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
 
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
+
         // Получаем данные страницы
         var articles = await allArticles
             .Skip((page - 1) * pageSize)
@@ -86,6 +90,10 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
 
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
+
         // Применяем пагинацию
         var articles = await allArticles
             .Skip((page - 1) * pageSize)
@@ -136,6 +144,13 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             .Include(a => a.Tags)
             .OrderByDescending(m => m.CreatedDate)
             .ToListAsync();
+
+        // Получаем общее количество
+        var totalCount = allArticles.Count();
+
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
 
         // Постраничная разбивка
         var articles = allArticles

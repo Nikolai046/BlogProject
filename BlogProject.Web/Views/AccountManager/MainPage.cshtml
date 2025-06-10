@@ -105,12 +105,10 @@
                                             }
                                             @if (comment.Deletable)
                                             {
-                                                <form asp-action="DeleteComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" method="post" class="d-inline">
-                                                    <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
-                                                            onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
-                                                        <i class="bi bi-trash text-danger"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                                                        onclick="deleteComment('@comment.CommentId', '@article.ArticleId')">
+                                                    <i class="bi bi-trash text-danger"></i>
+                                                </button>
                                             }
                                         </div>
                                     </div>
@@ -149,6 +147,7 @@
                     <li class="page-item">
                         <a class="page-link" asp-action="MainPage" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
                     </li>
+
                 }
             </ul>
         </nav>
@@ -157,6 +156,34 @@
 
 @section Scripts {
     <script>
+                // Скрипт для удаления комментария
+        function deleteComment(commentId, articleId) {
+            if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) {
+                return;
+            }
+
+            $.ajax({
+                url: '/AccountManager/delete_comment',
+                type: 'POST',
+                data: { id: commentId },
+                success: function(response) {
+                        // Удаляем блок комментария из DOM
+                        var commentDiv = $(`.comment[data-comment-id='${commentId}']`);
+                        commentDiv.remove();
+
+                        // Проверяем, остались ли комментарии, и добавляем placeholder, если их нет
+                        var commentsSection = $(`#comments-section-${articleId}`);
+                        if (commentsSection.find('.comment').length === 0) {
+                            commentsSection.html('<p class="text-muted">Комментариев пока нет.</p>');
+                        }
+                      },
+                error: function(xhr, status, error) {
+                    console.error('Ошибка:', xhr.responseText);
+                    alert('Произошла ошибка при удалении комментария.');
+                }
+            });
+        }
+
         // Скрипт для добавления комментария
         function addComment(articleId) {
             var commentText = $('#commentText-' + articleId).val();
@@ -285,4 +312,4 @@
         });
     </script>
 
-};
+}

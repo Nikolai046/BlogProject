@@ -21,6 +21,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Получаем общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
 
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
+
         // Получаем данные страницы
         var articles = await allArticles
             .Skip((page - 1) * pageSize)
@@ -84,6 +88,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
 
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
+
         // Применяем пагинацию
         var articles = await allArticles
             .Skip((page - 1) * pageSize)
@@ -134,6 +142,13 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             .Include(a => a.Tags)
             .OrderByDescending(m => m.CreatedDate)
             .ToListAsync();
+
+        // Получаем общее количество
+        var totalCount = allArticles.Count();
+
+        // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
+        var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
+        page = Math.Clamp(page, 1, lastPage);
 
         // Постраничная разбивка
         var articles = allArticles
