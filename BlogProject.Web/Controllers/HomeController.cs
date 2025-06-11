@@ -16,6 +16,5 @@ namespace BlogProject.Web.Controllers
                 return Task.FromResult<IActionResult>(RedirectToAction("Index", "Login"));
             }
         }
-
     }
 }

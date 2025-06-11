@@ -1,0 +1,43 @@
+﻿@model (List<ArticleViewModel> Articles, bool HasMore)
+@using BlogProject.Core.Models.ViewModels
+
+@{
+    ViewData["Title"] = "Статьи по тегам";
+    var currentPage = int.Parse(Context.Request.Query["page"].FirstOrDefault() ?? "1");
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Статьи по тегам</h1>
+
+    <!-- Строка поиска -->
+    <form asp-action="ArticlesByTags" asp-controller="AccountManager" method="get" class="mb-4">
+@*         <div class="input-group">
+            <input type="text" name="tags" class="form-control" placeholder="Введите теги через пробел (например: новости, спорт)" value="@tagsInput" />
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </div> *@
+        <div class="form-group tags-container">
+            <label for="tagInput">Теги</label>
+        <div class="input-group">
+            <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off"/>
+            <button type="submit" class="btn btn-primary mx-2">Найти</button>
+            </div>
+            <input type="hidden" id="tagList" name="TagList" />
+            <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
+        </div>
+       </form>
+
+    <partial name="_ArticlesPartial" model="Model" />
+</div>
+
+@* @section Scripts {
+    <script src="~/js/site.js"></script>
+} *@
+
+@section Scripts {
+    <script>
+        window.initialTags = @Html.Raw(Json.Serialize(new string[] {}));
+    </script>
+    <script src="~/js/site.js"></script>
+    <script src="~/js/tagHandler.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

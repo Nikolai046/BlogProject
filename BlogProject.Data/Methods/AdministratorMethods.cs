@@ -76,20 +76,19 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             .Distinct()
             .ToList();
 
-
         if (normalizedTags.Count == 0)
         {
             return ([], false);
         }
 
-
         var allArticles = context.Articles
             .Include(a => a.User)
             .Include(a => a.Comments)!
-                .ThenInclude(c => c.User)
+            .ThenInclude(c => c.User)
             .Include(a => a.Tags)
-            .Where(a => a.Tags != null && a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
-            .OrderByDescending(a => a.CreatedDate);
+            .Where(a => a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
+            .OrderByDescending(a => a.CreatedDate)
+            .AsQueryable();
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
@@ -327,7 +326,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         foreach (var tagName in tagNames)
         {
-
             if (tagName == null) continue;
             var normalizedTagName = tagName.ToUpper();
 
@@ -458,6 +456,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         return user;
     }
+
     public async Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile)
     {
         var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");

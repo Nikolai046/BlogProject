@@ -6,16 +6,16 @@ public class UpdateUserViewModel
 {
     [Required(ErrorMessage = "Заполните это поле")]
     [Display(Name = "Имя")]
-    public required string? FirstName { get; set; }
+    public string? FirstName { get; set; }
 
     [Required(ErrorMessage = "Заполните это поле")]
     [Display(Name = "Фамилия")]
-    public required string? LastName { get; set; }
+    public string? LastName { get; set; }
 
     [DataType(DataType.Password)]
     [Required(ErrorMessage = "Введите текущий пароль")]
     [Display(Name = "Текущий пароль")]
-    public required string CurrentPassword { get; set; }
+    public string CurrentPassword { get; set; }
 
     [DataType(DataType.Password)]
     [Display(Name = "Новый пароль")]

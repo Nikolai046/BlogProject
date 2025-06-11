@@ -21,7 +21,6 @@ body {
     margin-bottom: 60px;
 }
 
-
 /* Стили для информационной панели */
 .user-info-bar {
     font-size: 0.85rem; /* Уменьшенный шрифт */
@@ -58,7 +57,6 @@ body {
         .user-info-items::-webkit-scrollbar {
             display: none; /* Скрыть скроллбар в Chrome/Safari */
         }
-
 
     .article-card {
         margin-bottom: 2rem;

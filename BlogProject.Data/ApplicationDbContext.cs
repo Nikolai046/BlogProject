@@ -7,8 +7,10 @@ namespace BlogProject.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<User>(options)
 {
     public new DbSet<User> Users { get; set; }
+
     // public new DbSet<Role> Roles { get; set; }
     public DbSet<Article> Articles { get; set; }
+
     public DbSet<Tag> Tags { get; set; }
     public DbSet<Comment> Comments { get; set; }
 
@@ -21,5 +23,4 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
-
 }

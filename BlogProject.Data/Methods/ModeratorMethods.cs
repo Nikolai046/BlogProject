@@ -71,7 +71,6 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             .Distinct()
             .ToList();
 
-
         if (normalizedTags.Count == 0)
         {
             return ([], false);
@@ -80,10 +79,11 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         var allArticles = context.Articles
             .Include(a => a.User)
             .Include(a => a.Comments)!
-                .ThenInclude(c => c.User)
+            .ThenInclude(c => c.User)
             .Include(a => a.Tags)
-            .Where(a => a.Tags != null && a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
-            .OrderByDescending(a => a.CreatedDate);
+            .Where(a => a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
+            .OrderByDescending(a => a.CreatedDate)
+            .AsQueryable();
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();

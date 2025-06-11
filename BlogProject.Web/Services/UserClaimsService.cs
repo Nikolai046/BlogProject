@@ -1,10 +1,9 @@
-﻿using System.Runtime.ConstrainedExecution;
-using System.Security.Claims;
-using BlogProject.Core.CustomException;
+﻿using BlogProject.Core.CustomException;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
+using System.Security.Claims;
 using InvalidOperationException = System.InvalidOperationException;
 
 namespace BlogProject.Web.Services;
@@ -16,6 +15,7 @@ public class UserClaimsService(
 {
     // Используем IHttpContextAccessor для доступа к HttpContext
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
+
     private List<Claim> claims = [new Claim("ArticlesCount", "0")];
 
     public async Task<ClaimsPrincipal> CreateUserPrincipalAsync(User user)
@@ -62,13 +62,13 @@ public class UserClaimsService(
         }
         identity.AddClaim(new Claim("ArticlesCount", newCount.ToString()));
 
-
         // Обновляем аутентификацию через HttpContext
         await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
         {
             IsPersistent = false
         });
     }
+
     public async Task RefreshUserClaims(string userId)
     {
         var user = await userManager.FindByIdAsync(userId);
@@ -101,5 +101,4 @@ public class UserClaimsService(
 
         return principal;
     }
-
 }

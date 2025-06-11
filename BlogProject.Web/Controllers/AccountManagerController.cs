@@ -5,7 +5,6 @@ using Serilog;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
-using BlogProject.Data.Entities;
 
 namespace BlogProject.Web.Controllers;
 
@@ -13,7 +12,6 @@ namespace BlogProject.Web.Controllers;
 [Route("[controller]")]
 public class AccountManagerController(GetUserPermissions permissions) : Controller
 {
-
     [HttpGet("main_page")]
     public async Task<IActionResult> MainPage(int page = 1, int pageSize = 10, int? articleId = null)
     {
@@ -22,8 +20,33 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         ViewBag.ArticleId = articleId;
 
         return View(result);
-
     }
+
+    [HttpGet("articles_by_author")]
+    public async Task<IActionResult> ArticlesByAuthor(string userId, int page = 1, int pageSize = 10, int? articleId = null)
+    {
+        var methods = permissions.GetMethods();
+        var result = await methods.GetArticlesByUserId(userId, page, pageSize);
+        ViewBag.ArticleId = articleId;
+        return View(result);
+    }
+
+    [HttpGet("articles_by_tags")]
+    public async Task<IActionResult> ArticlesByTags(string tagList, int page = 1, int pageSize = 10, int? articleId = null)
+    {
+
+        var tags = string.IsNullOrEmpty(tagList) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(tagList);
+        //var tags = tagList?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        //    .Select(t => t.Trim())
+        //    .ToList() ?? new List<string>();
+
+
+        var methods = permissions.GetMethods();
+        var result = await methods.GetAllArticlesByTag(tags, page, pageSize);
+        ViewBag.ArticleId = articleId; // Устанавливаем ViewBag.ArticleId
+        return View(result);
+    }
+
 
     [HttpGet("create_article")]
     public IActionResult CreateArticle()
@@ -58,7 +81,6 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         await methods.CreateArticle(model);
 
         return RedirectToAction("MainPage", "AccountManager");
-
     }
 
     [HttpGet("edit_article/{id}/{page?}")]
@@ -73,7 +95,6 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
     [HttpPost("edit_article/{articleId}/{page?}")]
     public async Task<IActionResult> EditArticle(ArticleViewModel model, string tagList, [FromRoute] int articleId, [FromRoute] int page)
     {
-
         if (!ModelState.IsValid) return View(model);
         if (!string.IsNullOrEmpty(tagList))
         {
@@ -86,13 +107,8 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         var methods = permissions.GetMethods();
         await methods.EditArticle(articleId, model);
 
-
-
         return RedirectToAction("MainPage", new { page, articleId = model.ArticleId });
-
     }
-
-
 
     [HttpPost("create_comment")]
     public async Task<IActionResult> CreateComment(int articleId, string text)
@@ -108,13 +124,11 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         var updatedArticle = await methods.GetArticleById(articleId);
 
         return PartialView("_CommentsPartial", updatedArticle);
-
     }
 
     [HttpPost("edit_comment")]
     public async Task<IActionResult> EditComment(int commentId, string text)
     {
-
         // Добавляем комментарий к статье
         var comment = new CommentViewModel
         {
@@ -124,13 +138,8 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         await methods.EditComment(commentId, comment);
 
         return Ok();
-
     }
 
-    public async Task<IActionResult> EditComment()
-    {
-        throw new NotImplementedException();
-    }
 
     [HttpPost("delete_comment")]
     public async Task<IActionResult> DeleteComment(int id)
@@ -140,10 +149,12 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         return Ok();
     }
 
-
-    public async Task<IActionResult> DeleteArticle()
+    [HttpPost]
+    public async Task<IActionResult> DeleteArticle(int id, int page)
     {
-        throw new NotImplementedException();
+        var methods = permissions.GetMethods();
+        await methods.DeleteArticle(id);
+
+        return RedirectToAction("MainPage", new { page });
     }
 }
-

@@ -3,7 +3,7 @@ using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace BlogProject.Data.Methods;
 
@@ -18,7 +18,6 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             .ThenInclude(c => c.User)
             .Include(a => a.Tags)
             .OrderByDescending(a => a.CreatedDate);
-
 
         // Получить общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
@@ -73,26 +72,26 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             .Distinct()
             .ToList();
 
-
         if (normalizedTags.Count == 0)
         {
             return ([], false);
         }
 
+
         var allArticles = context.Articles
             .Include(a => a.User)
             .Include(a => a.Comments)!
-            .ThenInclude(c => c.User!)
+            .ThenInclude(c => c.User)
             .Include(a => a.Tags)
-            .OrderByDescending(a => a.CreatedDate);
-
+            .Where(a => a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
+            .OrderByDescending(a => a.CreatedDate)
+            .AsQueryable();
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
-        page = Math.Clamp(page, 1, lastPage);
 
         // Применяем пагинацию
         var articles = await allArticles
@@ -203,7 +202,6 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
 
     public async Task<ArticleViewModel?> GetArticleById(int articleId)
     {
-
         var article = await context.Articles
             .Include(a => a.User)
             .Include(a => a.Comments)!
@@ -211,7 +209,6 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
             .Include(a => a.Tags)
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == articleId);
-
 
         return article == null
             ? throw new NotFoundException("Статья не найдена")

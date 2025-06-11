@@ -16,6 +16,7 @@ public class Article
 
     [Required]
     public string Content { get; set; } = null!;
+
     public DateTime CreatedDate { get; set; } = DateTime.Now;
     public DateTime? UpdatedDate { get; set; }
 
@@ -24,6 +25,7 @@ public class Article
 
     // Связи
     public virtual User? User { get; set; }
+
     public virtual ICollection<Tag>? Tags { get; set; }
     public virtual ICollection<Comment>? Comments { get; set; }
 }

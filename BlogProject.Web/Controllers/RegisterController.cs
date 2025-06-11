@@ -1,12 +1,9 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
-using BlogProject.Data.Seeder;
 using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Data;
-using System.Security.Claims;
 using Serilog;
 
 namespace BlogProject.Web.Controllers;

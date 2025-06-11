@@ -4,7 +4,6 @@ using Serilog;
 using System.Net;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-
 namespace BlogProject.Web.Middleware;
 
 public class ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironment env, ILogger<ExceptionHandlingMiddleware> logger)
@@ -37,7 +36,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironme
 
         if (statusCode is >= 400 and <= 599)
         {
-
             string message = statusCode switch
             {
                 404 => "Страница не найдена",
@@ -49,7 +47,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironme
             };
             var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
 
-
             if (statusCode == 500 && exceptionFeature?.Error != null)
             {
                 logger.LogError(exceptionFeature.Error, "Error processing request for path: {Path}", originalPath);
@@ -57,7 +54,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironme
 
             context.Response.Redirect($"/Error/Index?statusCode={statusCode}&message={WebUtility.UrlEncode(message)}");
             await Task.CompletedTask;
-
         }
     }
 

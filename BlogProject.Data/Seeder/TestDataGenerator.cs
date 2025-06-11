@@ -1,10 +1,8 @@
 ﻿using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Data;
-using System.Security.Claims;
 using Serilog;
+using System.Security.Claims;
 
 namespace BlogProject.Data.Seeder;
 
@@ -107,7 +105,6 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
 
     private async Task ClaimsCreated(User user, string userRole)
     {
-
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id),
@@ -129,5 +126,4 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
                 "Клайм для пользователя {FirstName} {LastName} успешно создан ", user.FirstName, user.LastName);
         }
     }
-
 }

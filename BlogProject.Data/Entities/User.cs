@@ -12,9 +12,10 @@ public class User : IdentityUser
     [Required]
     [MaxLength(50)]
     public string? LastName { get; set; }
+
     [Required]
     [EmailAddress]
-    public override required string? Email
+    public override string? Email
     {
         get => base.Email!;
         set

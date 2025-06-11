@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Security.Claims;
 
-
 namespace BlogProject.Web.Controllers;
 
 [AllowAnonymous]
@@ -61,7 +60,6 @@ public class LoginController(UserManager<User> userManager, UserClaimsService cl
             ModelState.AddModelError(string.Empty, "Произошла ошибка при входе. Пожалуйста, попробуйте позже.");
             return View("Index", model);
         }
-
 
         return RedirectToAction("MainPage", "AccountManager");
     }

@@ -71,7 +71,6 @@ try
     // Используем пользовательский middleware для обработки исключений.
     app.UseCustomExceptionHandlingMiddleware();
 
-
     if (!app.Environment.IsDevelopment())
     {
         // Включаем HSTS (HTTP Strict Transport Security) для повышения безопасности

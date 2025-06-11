@@ -23,7 +23,7 @@ public class GetUserPermissions(IHttpContextAccessor httpContextAccessor, Applic
         return new UserMethods(context, userId, userManager);
     }
 
-   public IMethods GetMethods(User user, IList<string> roles)
+    public IMethods GetMethods(User user, IList<string> roles)
     {
         if (user == null)
             throw new NotFoundException("Идентификатор пользователя не может быть пустым.");
