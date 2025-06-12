@@ -1,5 +1,6 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
+using System.Threading.Tasks;
 
 namespace BlogProject.Data.Methods;
 
@@ -82,6 +83,8 @@ public interface IMethods
     Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10);
 
     Task<UserViewModel> GetUserInfoAsync(string? userId = null);
+
+    Task <string?> FindUserIdsByNameAsync(string name);
 }
 
 /*

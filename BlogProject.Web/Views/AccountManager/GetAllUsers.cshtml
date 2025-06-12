@@ -1,0 +1,118 @@
+﻿@model (List<UserViewModel> Users, bool HasMore)
+@using BlogProject.Core.Models.ViewModels
+
+@{
+    ViewData["Title"] = "Персональный блог - Пользователи";
+    var currentPage = int.Parse(Context.Request.Query["page"].FirstOrDefault() ?? "1");
+    const int pageSize = 10;
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Пользователи</h1>
+
+    @if (Model.Users?.Any() != true)
+    {
+        <div class="alert alert-warning" role="alert">
+            Пользователи не найдены.
+        </div>
+    }
+    else
+    {
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Имя и фамилия</th>
+                <th>Email</th>
+                <th>Роль</th>
+                <th>Количество статей</th>
+                <th>Теги</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr class="clickable-row" data-href="@Url.Action("ArticlesByAuthor", "AccountManager", new { userId = user.UserId })" style="cursor: pointer;">
+                   <td>@user.FirstName @user.LastName</td>
+                    <td>@user.Email</td>
+                    <td>@user.Roles.FirstOrDefault()</td>
+                    <td>@user.ArticleCount</td>
+                    <td>
+                        @if (user.Tag?.Any() == true)
+                        {
+                            foreach (var tag in user.Tag)
+                            {
+                                <span class="badge bg-primary me-1">@tag.Text</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">Тегов нет</span>
+                        }
+                    </td>
+                    <td class="text-nowrap no-click" style="pointer-events: auto;">
+                        @if (user.Deletable)
+                        {
+                            <form asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@user.UserId" asp-route-page="@currentPage" method="post" class="d-inline">
+                                <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Редактировать пользователя"
+                                        onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите редактировать этого пользователя?');">
+                                    <i class="bi bi-pencil-square text-primary"></i>
+                                </button>
+                            </form>
+                            <form asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@user.UserId" asp-route-page="@currentPage" method="post" class="d-inline">
+                                <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить пользователя"
+                                        onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить этого пользователя?');">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+        <!-- Пагинация -->
+        <nav aria-label="Пагинация пользователей" class="mt-4">
+            <ul class="pagination justify-content-center">
+                @if (currentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="GetAllUsers" asp-controller="AccountManager" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize">Предыдущая</a>
+                    </li>
+                }
+                <li class="page-item disabled">
+                    <span class="page-link">Страница @currentPage</span>
+                </li>
+                @if (Model.HasMore)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="GetAllUsers" asp-controller="AccountManager" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Подсветка строки при наведении
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('mouseover', () => row.classList.add('table-active'));
+            row.addEventListener('mouseout', () => row.classList.remove('table-active'));
+            
+            // Обработчик клика для всей строки
+            row.addEventListener('click', function(e) {
+                // Игнорируем клики по кнопкам и элементам с классом no-click
+                if (!e.target.closest('.no-click') && 
+                    e.target.tagName !== 'BUTTON' && 
+                    e.target.tagName !== 'A') {
+                    window.location.href = this.dataset.href;
+                }
+            });
+        });
+    </script>
+}

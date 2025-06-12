@@ -69,7 +69,7 @@ try
     var app = builder.Build();
 
     // Используем пользовательский middleware для обработки исключений.
-    app.UseCustomExceptionHandlingMiddleware();
+    //app.UseCustomExceptionHandlingMiddleware();
 
     if (!app.Environment.IsDevelopment())
     {

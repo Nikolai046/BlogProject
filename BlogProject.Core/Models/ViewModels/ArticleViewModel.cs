@@ -14,7 +14,7 @@ public class ArticleViewModel
     [StringLength(10000, MinimumLength = 2, ErrorMessage = "Поле {0} должно иметь минимум {2} и максимум {1} символов.")]
     [Required(ErrorMessage = "Заполните это поле")]
     [Display(Name = "Содержагие статьи")]
-    public string Content { get; set; }
+    public string? Content { get; set; }
 
     public string? AuthorFullName { get; set; }
     public DateTime CreatedDate { get; set; }

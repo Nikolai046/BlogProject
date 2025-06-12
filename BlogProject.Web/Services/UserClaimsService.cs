@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Security.Claims;
+using BlogProject.Core.Models.ViewModels;
 using InvalidOperationException = System.InvalidOperationException;
 
 namespace BlogProject.Web.Services;
@@ -69,21 +70,28 @@ public class UserClaimsService(
         });
     }
 
-    public async Task RefreshUserClaims(string userId)
+    public async Task RefreshUserClaims(UserViewModel model)
     {
-        var user = await userManager.FindByIdAsync(userId);
-        if (user != null)
+        var user = await userManager.FindByIdAsync(model.UserId!);
+        if (user == null) return;
+        // Создаем полностью новый principal с обновленными claims
+        var principal = await CreateUserPrincipalAsync(user);
+
+        // Обновляем claim ArticlesCount в новом principal
+        var identity = (ClaimsIdentity)principal.Identity!;
+        var existingClaim = identity.FindFirst("ArticlesCount");
+
+        if (existingClaim != null)
         {
-            var principal = await CreateUserPrincipalAsync(user);
-            await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
-            {
-                IsPersistent = false
-            });
+            identity.RemoveClaim(existingClaim);
         }
-        else
+        identity.AddClaim(new Claim("ArticlesCount", model.ArticleCount.ToString()));
+
+        // Обновляем аутентификацию через HttpContext
+        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
         {
-            throw new NotFoundException($"Пользователь с Id={userId} для обновления клайма");
-        }
+            IsPersistent = false
+        });
     }
 
     public async Task<ClaimsPrincipal> SaveNewClaimAsync(User user)

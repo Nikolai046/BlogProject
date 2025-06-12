@@ -41,6 +41,33 @@ body {
     white-space: nowrap;
 }
 
+.clickable-row:hover {
+    background-color: #f8f9fa;
+}
+
+/* ”берите подчеркивание у ссылок внутри таблицы */
+.table a {
+    text-decoration: none;
+    color: inherit;
+}
+
+
+    /* Ёффект при наведении на €чейку */
+.table td:not(.no-click):hover::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.03);
+    z-index: -1;
+}
+
+.table td:not(.no-click) {
+    position: relative;
+}
+
 /* јдаптивность дл€ мобильных */
 @media (max-width: 768px) {
     .user-info-bar {

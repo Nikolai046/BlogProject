@@ -21,6 +21,8 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Получаем общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
 
+        if (totalCount == 0) return ([], false);
+
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
         page = Math.Clamp(page, 1, lastPage);
@@ -81,12 +83,14 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             .Include(a => a.Comments)!
             .ThenInclude(c => c.User)
             .Include(a => a.Tags)
-            .Where(a => a.Tags.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
+            .Where(a => a.Tags!.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
             .OrderByDescending(a => a.CreatedDate)
             .AsQueryable();
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
+
+        if (totalCount == 0) return ([], false);
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -145,6 +149,8 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         // Получаем общее количество
         var totalCount = allArticles.Count();
+
+        if (totalCount == 0) return ([], false);
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -404,31 +410,70 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
     {
         var allUsers = context.Users
-            .Where(u => u.Id != currentUserId) // Исключаем текущего пользователя
-            .Include(u => u.Articles) // Подключаем статьи для подсчета
+            .Where(u => u.Id != currentUserId)
             .OrderBy(u => u.LastName)
-            .ThenBy(u => u.FirstName);
+            .ThenBy(u => u.FirstName)
+            .Include(u => u.Articles!)
+                .ThenInclude(a => a.Tags);
 
-        // Получаем общее количество пользователей
+        var userRolesQuery = context.UserRoles
+            .Join(context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => new { ur.UserId, RoleName = r.Name });
+
         var totalCount = await allUsers.CountAsync();
 
-        // Получаем данные страницы
-        var users = await allUsers
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(u => new UserViewModel
-            {
-                UserId = u.Id,
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                Email = u.Email,
-                ArticleCount = u.Articles != null ? u.Articles.Count : 0,
-                Deletable = false
-            })
-            .ToListAsync();
+        // Защита от page < 1 и пустой БД
+        var lastPage = totalCount > 0
+            ? (int)Math.Ceiling((double)totalCount / pageSize)
+            : 1;
+        page = Math.Clamp(page, 1, lastPage);
+        List<UserViewModel> users;
+
+        try
+        {
+            // Получаем данные пользователей с загруженными статьями и тегами
+            var usersWithData = await allUsers
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Преобразуем в ViewModel и обрабатываем теги в памяти
+            users = usersWithData.Select(u => {
+                // Собираем все уникальные теги из всех статей пользователя
+                var allTags = u.Articles!
+                    .SelectMany(a => a.Tags!)
+                    .Select(t => t.Name)
+                    .Distinct()
+                    .OrderBy(name => name)
+                    .Select(name => new TagViewModel { Text = name })
+                    .ToList();
+
+                return new UserViewModel
+                {
+                    UserId = u.Id,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email,
+                    Deletable = false,
+                    ArticleCount = u.Articles!.Count,
+                    Tag = allTags,
+                    Roles = userRolesQuery
+                        .Where(ur => ur.UserId == u.Id)
+                        .Select(ur => ur.RoleName)
+                        .ToList()!
+                };
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Логируйте полную ошибку, включая InnerException
+            Console.WriteLine($"Ошибка: {ex.Message}\n{ex.InnerException?.Message}");
+            throw;
+        }
 
         var hasMore = totalCount > page * pageSize;
-
         return (users, hasMore);
     }
 
@@ -508,5 +553,24 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
 
         await userManager.DeleteAsync(user);
+    }
+
+    public async Task<string?> FindUserIdsByNameAsync(string name)
+    {
+        name = name.ToUpper();
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return words.Length switch
+        {
+            0 => null,
+            1 => await userManager.Users
+                .Where(u => u.FirstName!.ToUpper() == words[0] || u.LastName!.ToUpper() == words[0])
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync(),
+            _ => await userManager.Users
+                .Where(u => (u.FirstName!.ToUpper() == words[0] && u.LastName!.ToUpper() == words[1]) ||
+                            (u.FirstName.ToUpper() == words[1] && u.LastName!.ToUpper() == words[0]))
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync()
+        };
     }
 }

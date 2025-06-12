@@ -11,9 +11,9 @@
     <h1 class="mb-4">Статьи автора</h1>
 
     <!-- Строка поиска -->
-    <form asp-action="ArticlesByAuthor" asp-controller="AccountManager" method="get" class="mb-4">
+    <form asp-action="ArticlesByUsername" asp-controller="AccountManager" method="get" class="mb-4">
         <div class="input-group">
-            <input type="text" name="userId" class="form-control" placeholder="Введите ID автора"  />
+            <input type="text" name="userName" class="form-control" placeholder="Введите Имя и/или Фамилию автора" />
             <button type="submit" class="btn btn-primary ms-2">Найти</button>
         </div>
     </form>

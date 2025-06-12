@@ -1,16 +1,17 @@
 ﻿using BlogProject.Core.Models.ViewModels;
+using BlogProject.Data.Entities;
 using BlogProject.Web.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
 
 namespace BlogProject.Web.Controllers;
 
 [Authorize]
 [Route("[controller]")]
-public class AccountManagerController(GetUserPermissions permissions) : Controller
+public class AccountManagerController(GetUserPermissions permissions, UserClaimsService claimsService) : Controller
 {
     [HttpGet("main_page")]
     public async Task<IActionResult> MainPage(int page = 1, int pageSize = 10, int? articleId = null)
@@ -28,18 +29,28 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         var methods = permissions.GetMethods();
         var result = await methods.GetArticlesByUserId(userId, page, pageSize);
         ViewBag.ArticleId = articleId;
+        ViewBag.UserId = userId;
+        return View(result);
+    }
+
+    [HttpGet("articles_by_username")]
+    public async Task<IActionResult> ArticlesByUsername(string userName, int page = 1, int pageSize = 10, int? articleId = null)
+    {
+        if (string.IsNullOrEmpty(userName)) return View(null);
+        var methods = permissions.GetMethods();
+        var userId = await methods.FindUserIdsByNameAsync(userName);
+        var result = await methods.GetArticlesByUserId(userId, page, pageSize);
+        ViewBag.ArticleId = articleId;
+        ViewBag.UserId = userId;
         return View(result);
     }
 
     [HttpGet("articles_by_tags")]
     public async Task<IActionResult> ArticlesByTags(string tagList, int page = 1, int pageSize = 10, int? articleId = null)
     {
+        if (string.IsNullOrEmpty(tagList)) return View(null);
 
-        var tags = string.IsNullOrEmpty(tagList) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(tagList);
-        //var tags = tagList?.Split(',', StringSplitOptions.RemoveEmptyEntries)
-        //    .Select(t => t.Trim())
-        //    .ToList() ?? new List<string>();
-
+        var tags = JsonSerializer.Deserialize<List<string>>(tagList) ?? [];
 
         var methods = permissions.GetMethods();
         var result = await methods.GetAllArticlesByTag(tags, page, pageSize);
@@ -79,6 +90,9 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         if (!ModelState.IsValid) return View(model);
         var methods = permissions.GetMethods();
         await methods.CreateArticle(model);
+
+        var user = await methods.GetUserInfoAsync();
+        await claimsService.RefreshUserClaims(user);
 
         return RedirectToAction("MainPage", "AccountManager");
     }
@@ -156,5 +170,14 @@ public class AccountManagerController(GetUserPermissions permissions) : Controll
         await methods.DeleteArticle(id);
 
         return RedirectToAction("MainPage", new { page });
+    }
+
+    [HttpGet("get_all_users")]
+    public async Task<IActionResult> GetAllUsers(int page = 1, int pageSize = 10)
+    {
+        var methods = permissions.GetMethods();
+        var result= await methods.GetAllUsersAsync(page, pageSize);
+
+        return View(result);
     }
 }

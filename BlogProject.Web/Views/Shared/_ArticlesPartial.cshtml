@@ -130,7 +130,7 @@
                 @if (currentPage > 1)
                 {
                     <li class="page-item">
-                        <a class="page-link" asp-action="@ViewContext.RouteData.Values["action"]" asp-controller="AccountManager" asp-route-page="@(currentPage - 1)" asp-route-pageSize="@pageSize">Предыдущая</a>
+                    <a class="page-link" asp-action="@ViewContext.RouteData.Values["action"]" asp-controller="AccountManager" asp-route-userid="@ViewBag.UserId" asp-route-pageSize="@pageSize">Предыдущая</a>
                     </li>
                 }
                 <li class="page-item disabled">
@@ -139,7 +139,7 @@
                 @if (Model.HasMore)
                 {
                     <li class="page-item">
-                        <a class="page-link" asp-action="@ViewContext.RouteData.Values["action"]" asp-controller="AccountManager" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
+                    <a class="page-link" asp-action="@ViewContext.RouteData.Values["action"]" asp-controller="AccountManager" asp-route-userid="@ViewBag.UserId" asp-route-page="@(currentPage + 1)" asp-route-pageSize="@pageSize">Следующая</a>
                     </li>
 
                 }
