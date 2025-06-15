@@ -51,6 +51,11 @@ body {
     color: inherit;
 }
 
+.auto-resize {
+    overflow-y: hidden; /* —крываем вертикальный скролл */
+    resize: none; /* ќтключаем ручное изменение размера */
+    transition: height 0.2s ease; /* ѕлавное изменение высоты */
+}
 
     /* Ёффект при наведении на €чейку */
 .table td:not(.no-click):hover::after {

@@ -10,17 +10,13 @@ public class Article
 {
     public int Id { get; set; }
 
-    [Required]
-    [MaxLength(200)]
     public string Title { get; set; } = null!;
 
-    [Required]
     public string? Content { get; set; } = null!;
 
     public DateTime CreatedDate { get; set; } = DateTime.Now;
     public DateTime? UpdatedDate { get; set; }
 
-    [Required]
     public string UserId { get; set; } = null!;
 
     // Связи

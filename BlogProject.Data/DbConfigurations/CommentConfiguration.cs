@@ -25,7 +25,8 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasOne(c => c.User)                // Один комментарий имеет одного автора
             .WithMany(u => u.Comments)           // У пользователя может быть много комментариев
             .HasForeignKey(c => c.UserId)      // Внешний ключ
-            .OnDelete(DeleteBehavior.Restrict);  // Запрещаем каскадное удаление
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);  // Запрещаем каскадное удаление
 
         // Связь с Article
         builder.HasOne(c => c.Article)              // Один комментарий привязан к одной статье

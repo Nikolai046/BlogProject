@@ -3,13 +3,15 @@ using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Serilog;
 
 namespace BlogProject.Data.Methods;
 
 public class AdministratorMethods(ApplicationDbContext context, string? currentUserId, UserManager<User> userManager)
     : IMethods
 {
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticles(int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesAsync(int page, int pageSize = 10)
     {
         var allArticles = context.Articles
             .Include(a => a.User)
@@ -69,7 +71,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         return (articles, hasMore);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTag(List<string> tags, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10)
     {
         // Нормализация тегов: обрезка пробелов и приведение к верхнему регистру
         var normalizedTags = tags
@@ -140,7 +142,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         return (articles, hasMore);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserId(string? userId, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10)
     {
         // Проверка UserID
         var targetUserId = userId ?? currentUserId;
@@ -213,7 +215,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         return (result, hasMore);
     }
 
-    public async Task<ArticleViewModel?> GetArticleById(int articleId)
+    public async Task<ArticleViewModel?> GetArticleByIdAsync(int articleId)
     {
         var article = await context.Articles
             .Include(a => a.User)
@@ -256,7 +258,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             };
     }
 
-    public async Task CreateArticle(ArticleViewModel model)
+    public async Task CreateArticleAsync(ArticleViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
@@ -304,9 +306,10 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         context.Articles.Add(article);
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Статья {ArticleId} создана пользователем {UserId}", article.Id, currentUserId);
     }
 
-    public async Task EditArticle(int articleId, ArticleViewModel model)
+    public async Task EditArticleAsync(int articleId, ArticleViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
@@ -355,17 +358,19 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         }
 
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Статья {ArticleId} обновлена пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task DeleteArticle(int articleId)
+    public async Task DeleteArticleAsync(int articleId)
     {
         var article = await context.Articles
             .FirstOrDefaultAsync(a => a.Id == articleId) ?? throw new ForbiddenException("Статья не найдена");
         context.Articles.Remove(article);
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Статья {ArticleId} удалена пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task CreateComment(int articleId, CommentViewModel model)
+    public async Task CreateCommentAsync(int articleId, CommentViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные комментария", 400);
@@ -383,9 +388,10 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Комментарий добавлен к статье {ArticleId} пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task EditComment(int commentId, CommentViewModel model)
+    public async Task EditCommentAsync(int commentId, CommentViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные комментария", 400);
@@ -400,14 +406,18 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         comment.UpdatedDate = DateTime.Now;
 
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Комментарий {CommentId} обновлен пользователем {UserId}", commentId, currentUserId);
+
     }
 
-    public async Task DeleteComment(int commentId)
+    public async Task DeleteCommentAsync(int commentId)
     {
         var comment = await context.Comments
             .FirstOrDefaultAsync(c => c.Id == commentId) ?? throw new ForbiddenException("Комментарий не найден");
         context.Comments.Remove(comment);
         await context.SaveChangesAsync();
+        Log.Information("AdministratorMethods: Комментарий {CommentId} удален пользователем {UserId}", commentId, currentUserId);
+
     }
 
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
@@ -443,7 +453,8 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
                 .ToListAsync();
 
             // Преобразуем в ViewModel и обрабатываем теги в памяти
-            users = usersWithData.Select(u => {
+            users = usersWithData.Select(u =>
+            {
                 // Собираем все уникальные теги из всех статей пользователя
                 var allTags = u.Articles!
                     .SelectMany(a => a.Tags!)
@@ -471,8 +482,10 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         }
         catch (Exception ex)
         {
-            // Логируйте полную ошибку, включая InnerException
-            Console.WriteLine($"Ошибка: {ex.Message}\n{ex.InnerException?.Message}");
+            Log.Error("AdministratorMethods: Ошибка при получении пользователей. Сообщение: {Message}. StackTrace: {StackTrace}. InnerException: {InnerException}",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message);
             throw;
         }
 
@@ -480,9 +493,59 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         return (users, hasMore);
     }
 
-    public async Task<UserViewModel> GetUserInfoAsync(string? userId = null)
+    public async Task<(UserViewModel, List<string>)> GetUserInfoAsync(string? userId = null)
     {
         userId ??= currentUserId ?? throw new NotFoundException("Пользователь не найден");
+        var deletable = userId == currentUserId;
+
+        // получаем пользователя
+        var user = await context.Users
+            .Where(u => u.Id == userId)
+            .Include(u => u.Articles)
+            .Select(u => new UserViewModel
+            {
+                UserId = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                ArticleCount = u.Articles != null ? u.Articles.Count : 0,
+                Deletable = true
+            })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+            throw new NotFoundException("Пользователь не найден");
+
+        // Получаем роли пользователя отдельным запросом
+        var userRoles = await context.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => r.Name)
+            .Distinct()
+            .ToListAsync();
+
+        // Заполняем роли в объекте user
+        user.Roles = userRoles;
+
+        // Получаем все роли для второго возвращаемого значения
+        var allRoles = await context.Roles
+            .Select(r => r.Name)
+            .Distinct()
+            .ToListAsync();
+
+        return (user, allRoles)!;
+    }
+
+    public async Task<UserViewModel> GetUserInfoByArticleIdAsync(int articleId)
+    {
+
+        var userId = await context.Articles
+            .Where(a => a.Id == articleId)
+            .Select(a => a.UserId)
+            .FirstOrDefaultAsync() ?? throw new NotFoundException("Статья не найдена");
+
         var deletable = userId == currentUserId;
 
         var user = await context.Users
@@ -495,61 +558,120 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
                 LastName = u.LastName,
                 Email = u.Email,
                 ArticleCount = u.Articles != null ? u.Articles.Count : 0,
-                Deletable = deletable
+                Deletable = true
             })
             .FirstOrDefaultAsync() ?? throw new NotFoundException("Пользователь не найден");
 
         return user;
     }
 
-    public async Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile)
+    public async Task<IdentityResult> EditUserProfileAsync(UpdateUserViewModel profile, bool isAdminEditingOtherUser)
     {
-        var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
 
-        // Обновление основных полей
-        user.FirstName = profile.FirstName;
-        user.LastName = profile.LastName;
+        var user = await userManager.FindByIdAsync(profile.UserId!) ?? throw new NotFoundException("Пользователь не найден");
 
-        // Обновление пароля при необходимости
-        if (!string.IsNullOrEmpty(profile.NewPassword))
+        // Проверяем, есть ли уже открытая транзакция
+        IDbContextTransaction? transaction = null;
+        if (context.Database.CurrentTransaction == null)
         {
-            // Проверка текущего пароля
-            var passwordCheck = await userManager.CheckPasswordAsync(user, profile.CurrentPassword);
-            if (!passwordCheck)
+            transaction = await context.Database.BeginTransactionAsync();
+            Log.Information("AdministratorMethods: Начата транзакция для редактирования профиля пользователя, UserId: {UserId}", profile.UserId);
+        }
+
+        try
+        {
+            // Обновление основных полей
+            user.FirstName = profile.FirstName;
+            user.LastName = profile.LastName;
+
+            // Если администратор редактирует другого пользователя, пропускаем проверку текущ��го пароля
+            if (!isAdminEditingOtherUser)
             {
-                return IdentityResult.Failed(new IdentityError
+                // Проверка текущего пароля
+                var passwordCheck = await userManager.CheckPasswordAsync(user, profile.CurrentPassword!);
+                if (!passwordCheck)
                 {
-                    Description = "Неверный текущий пароль"
-                });
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = "Неверный текущий пароль"
+                    });
+                }
+
+                // Обновление пароля при необходимости
+                if (!string.IsNullOrEmpty(profile.NewPassword))
+                {
+                    if (string.IsNullOrEmpty(profile.CurrentPassword))
+                    {
+                        return IdentityResult.Failed(new IdentityError
+                        {
+                            Description = "Текущий пароль обязателен для смены пароля"
+                        });
+                    }
+
+                    // Смена пароля
+                    var changeResult = await userManager.ChangePasswordAsync(
+                        user,
+                        profile.CurrentPassword!,
+                        profile.NewPassword);
+
+                    if (!changeResult.Succeeded)
+                    {
+                        return changeResult;
+                    }
+                }
             }
 
-            // Смена пароля
-            var changeResult = await userManager.ChangePasswordAsync(
-                user,
-                profile.CurrentPassword,
-                profile.NewPassword);
+            // Обновляем роль
+            var currentRoles = await userManager.GetRolesAsync(user);
+            await userManager.RemoveFromRolesAsync(user, currentRoles);
+            await userManager.AddToRoleAsync(user, profile.Role!);
 
-            if (!changeResult.Succeeded)
+
+            // Сохранение изменений профиля
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
             {
-                return changeResult;
+                return updateResult;
+            }
+
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+                Log.Information("AdministratorMethods: Зафиксирована транзакция для EditUserProfileAsync, UserId: {UserId}", profile.UserId);
+            }
+
+            Log.Information("AdministratorMethods: Профиль обновлен для пользователя {UserId}: Имя={FirstName}, Фамилия={LastName}, Роль={Role}", profile.UserId, profile.FirstName, profile.LastName, profile.Role);
+            return IdentityResult.Success;
+        }
+        catch (Exception ex)
+        {
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+                Log.Error("AdministratorMethods: Откат транзакции для EditUserProfileAsync, UserId: {UserId}, Ошибка: {Error}", profile.UserId, ex.Message);
+            }
+            throw;
+        }
+        finally
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
             }
         }
-
-        // Сохранение изменений профиля
-        var updateResult = await userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded)
-        {
-            return updateResult;
-        }
-
-        return IdentityResult.Success;
     }
 
-    public async Task DeleteUser(string userId)
+    public async Task DeleteUserAsync(string userId)
     {
         var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
 
         await userManager.DeleteAsync(user);
+        if (currentUserId == userId)
+            Log.Information("AdministratorMethods: Пользователь {UserId} удалил свои данные", userId);
+        else
+        {
+            Log.Information("AdministratorMethods: Администратор:{CurrentUserID} удалил пользователя с UserId: {UserId}", currentUserId, userId);
+        }
     }
 
     public async Task<string?> FindUserIdsByNameAsync(string name)

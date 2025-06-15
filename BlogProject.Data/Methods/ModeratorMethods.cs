@@ -3,13 +3,15 @@ using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Serilog;
 
 namespace BlogProject.Data.Methods;
 
 public class ModeratorMethods(ApplicationDbContext context, string? currentUserId, UserManager<User> userManager)
     : IMethods
 {
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticles(int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesAsync(int page, int pageSize = 10)
     {
         var allArticles = context.Articles
             .Include(a => a.User)
@@ -64,7 +66,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         return (articles, hasMore);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTag(List<string> tags, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10)
     {
         // Нормализация тегов: обрезка пробелов и приведение к верхнему регистру
         var normalizedTags = tags
@@ -133,7 +135,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         return (articles, hasMore);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserId(string? userId, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10)
     {
         // Проверка UserID
         var targetUserId = userId ?? currentUserId;
@@ -205,7 +207,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         return (result, hasMore);
     }
 
-    public async Task<ArticleViewModel?> GetArticleById(int articleId)
+    public async Task<ArticleViewModel?> GetArticleByIdAsync(int articleId)
     {
         var article = await context.Articles
             .Include(a => a.User)
@@ -250,7 +252,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             };
     }
 
-    public async Task CreateArticle(ArticleViewModel model)
+    public async Task CreateArticleAsync(ArticleViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
@@ -298,9 +300,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         context.Articles.Add(article);
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Статья {ArticleId} создана пользователем {UserId}", article.Id, currentUserId);
     }
 
-    public async Task EditArticle(int articleId, ArticleViewModel model)
+    public async Task EditArticleAsync(int articleId, ArticleViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные статьи", 400);
@@ -349,17 +352,19 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         }
 
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Статья {ArticleId} обновлена пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task DeleteArticle(int articleId)
+    public async Task DeleteArticleAsync(int articleId)
     {
         var article = await context.Articles
             .FirstOrDefaultAsync(a => a.Id == articleId && a.UserId == currentUserId) ?? throw new ForbiddenException("Статья не найдена или у вас нет прав на удаление");
         context.Articles.Remove(article);
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Статья {ArticleId} удалена пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task CreateComment(int articleId, CommentViewModel model)
+    public async Task CreateCommentAsync(int articleId, CommentViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные комментария", 400);
@@ -377,9 +382,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Комментарий добавлен к статье {ArticleId} пользователем {UserId}", articleId, currentUserId);
     }
 
-    public async Task EditComment(int commentId, CommentViewModel model)
+    public async Task EditCommentAsync(int commentId, CommentViewModel model)
     {
         if (model == null)
             throw new AppException("Неверные данные комментария", 400);
@@ -395,9 +401,11 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         comment.UpdatedDate = DateTime.Now;
 
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Комментарий {CommentId} обновлен пользователем {UserId}", commentId, currentUserId);
+
     }
 
-    public async Task DeleteComment(int commentId)
+    public async Task DeleteCommentAsync(int commentId)
     {
         var comment = await context.Comments
             .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == currentUserId) ?? throw new ForbiddenException("Комментарий не найден или у вас нет прав на удаление");
@@ -405,6 +413,8 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         context.Comments.Remove(comment);
 
         await context.SaveChangesAsync();
+        Log.Information("ModeratorMethods: Комментарий {CommentId} удален пользователем {UserId}", commentId, currentUserId);
+
     }
 
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
@@ -440,7 +450,8 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
                 .ToListAsync();
 
             // Преобразуем в ViewModel и обрабатываем теги в памяти
-            users = usersWithData.Select(u => {
+            users = usersWithData.Select(u =>
+            {
                 // Собираем все уникальные теги из всех статей пользователя
                 var allTags = u.Articles!
                     .SelectMany(a => a.Tags!)
@@ -468,8 +479,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         }
         catch (Exception ex)
         {
-            // Логируйте полную ошибку, включая InnerException
-            Console.WriteLine($"Ошибка: {ex.Message}\n{ex.InnerException?.Message}");
+            Log.Error("ModeratorMethods: Ошибка при получении пользователей. Сообщение: {Message}. StackTrace: {StackTrace}. InnerException: {InnerException}",
+                ex.Message,
+                ex.StackTrace,
+                ex.InnerException?.Message);
             throw;
         }
 
@@ -477,9 +490,63 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         return (users, hasMore);
     }
 
-    public async Task<UserViewModel> GetUserInfoAsync(string? userId = null)
+    public async Task<(UserViewModel, List<string>)> GetUserInfoAsync(string? userId = null)
     {
         userId ??= currentUserId ?? throw new NotFoundException("Пользователь не найден");
+        var deletable = userId == currentUserId;
+
+        // получаем пользователя
+        var user = await context.Users
+            .Where(u => u.Id == userId)
+            .Include(u => u.Articles)
+            .Select(u => new UserViewModel
+            {
+                UserId = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                ArticleCount = u.Articles != null ? u.Articles.Count : 0,
+                Deletable = deletable
+            })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+            throw new NotFoundException("Пользователь не найден");
+
+        // Получаем роли пользователя отдельным запросом
+        var userRoles = await context.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => r.Name)
+            .Distinct()
+            .ToListAsync();
+
+        // Проверяем, что текущий пользователь имеет право просматривать информацию о запрашиваемом пользователе 
+        if (!userRoles.Contains("Administrator") && userId != currentUserId)
+            throw new ForbiddenException("Вы не можете просматривать информацию об этом пользователе");
+
+        // Заполняем роли в объекте user
+        user.Roles = userRoles;
+
+        // Получаем все роли для второго возвращаемого значения
+        var allRoles = await context.Roles
+            .Select(r => r.Name)
+            .Distinct()
+            .ToListAsync();
+
+        return (user, allRoles)!;
+    }
+
+    public async Task<UserViewModel> GetUserInfoByArticleIdAsync(int articleId)
+    {
+
+        var userId = await context.Articles
+            .Where(a => a.Id == articleId)
+            .Select(a => a.UserId)
+            .FirstOrDefaultAsync() ?? throw new NotFoundException("Статья не найдена");
+
         var deletable = userId == currentUserId;
 
         var user = await context.Users
@@ -499,22 +566,29 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         return user;
     }
 
-    public async Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile)
+    public async Task<IdentityResult> EditUserProfileAsync(UpdateUserViewModel profile, bool isAdminEditingOtherUser)
     {
-        if (userId != currentUserId)
+        if (profile.UserId != currentUserId)
             throw new ForbiddenException("Редактирование профиля запрещено");
 
-        var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
+        var user = await userManager.FindByIdAsync(profile.UserId!) ?? throw new NotFoundException("Пользователь не найден");
 
-        // Обновление основных полей
-        user.FirstName = profile.FirstName;
-        user.LastName = profile.LastName;
-
-        // Обновление пароля при необходимости
-        if (!string.IsNullOrEmpty(profile.NewPassword))
+        // Проверяем, есть ли уже открытая транзакция
+        IDbContextTransaction? transaction = null;
+        if (context.Database.CurrentTransaction == null)
         {
+            transaction = await context.Database.BeginTransactionAsync();
+            Log.Information("ModeratorMethods: Начата транзакция для редактирования профиля пользователя, UserId: {UserId}", profile.UserId);
+        }
+
+        try
+        {
+            // Обновление основных полей
+            user.FirstName = profile.FirstName;
+            user.LastName = profile.LastName;
+
             // Проверка текущего пароля
-            var passwordCheck = await userManager.CheckPasswordAsync(user, profile.CurrentPassword);
+            var passwordCheck = await userManager.CheckPasswordAsync(user, profile.CurrentPassword!);
             if (!passwordCheck)
             {
                 return IdentityResult.Failed(new IdentityError
@@ -523,29 +597,70 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
                 });
             }
 
-            // Смена пароля
-            var changeResult = await userManager.ChangePasswordAsync(
-                user,
-                profile.CurrentPassword,
-                profile.NewPassword);
-
-            if (!changeResult.Succeeded)
+            // Обновление пароля при необходимости
+            if (!string.IsNullOrEmpty(profile.NewPassword))
             {
-                return changeResult;
+                if (string.IsNullOrEmpty(profile.CurrentPassword))
+                {
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = "Текущий пароль обязателен для смены пароля"
+                    });
+                }
+
+                // Смена пароля
+                var changeResult = await userManager.ChangePasswordAsync(
+                    user,
+                    profile.CurrentPassword!,
+                    profile.NewPassword);
+
+                if (!changeResult.Succeeded)
+                {
+                    return changeResult;
+                }
+            }
+
+            // Обновляем роль
+            var currentRoles = await userManager.GetRolesAsync(user);
+            await userManager.RemoveFromRolesAsync(user, currentRoles);
+            await userManager.AddToRoleAsync(user, profile.Role!);
+
+
+            // Сохранение изменений профиля
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return updateResult;
+            }
+
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+                Log.Information("ModeratorMethods: Зафиксирована транзакция для EditUserProfileAsync, UserId: {UserId}", profile.UserId);
+            }
+
+            Log.Information("ModeratorMethods: Профиль обновлен для пользователя {UserId}: Имя={FirstName}, Фамилия={LastName}, Роль={Role}", profile.UserId, profile.FirstName, profile.LastName, profile.Role);
+            return IdentityResult.Success;
+        }
+        catch (Exception ex)
+        {
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+                Log.Error("ModeratorMethods: Откат транзакции для EditUserProfileAsync, UserId: {UserId}, Ошибка: {Error}", profile.UserId, ex.Message);
+            }
+            throw;
+        }
+        finally
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
             }
         }
-
-        // Сохранение изменений профиля
-        var updateResult = await userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded)
-        {
-            return updateResult;
-        }
-
-        return IdentityResult.Success;
     }
 
-    public async Task DeleteUser(string userId)
+    public async Task DeleteUserAsync(string userId)
     {
         if (userId != currentUserId)
             throw new ForbiddenException("Удаление пользователя запрещено");
@@ -553,6 +668,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         var user = await userManager.FindByIdAsync(userId) ?? throw new NotFoundException("Пользователь не найден");
 
         await userManager.DeleteAsync(user);
+        Log.Information("ModeratorMethods: Пользователь {UserId} удалил свои данные", userId);
     }
 
     public async Task<string?> FindUserIdsByNameAsync(string name)

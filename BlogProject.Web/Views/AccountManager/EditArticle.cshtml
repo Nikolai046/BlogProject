@@ -19,7 +19,7 @@
         <div class="form-group tags-container">
             <label for="tagInput">Теги</label>
             <input id="tagInput" class="form-control" placeholder="Введите теги, разделяя их пробелами" autocomplete="off" value="@initialTags" />
-            <input type="hidden" id="tagList" name="TagList" />
+            <input type="hidden" id="tagList" name="TagList" value="@initialTags" />
             <div id="tagDisplay" class="d-flex mt-2 flex-wrap gap-2"></div>
         </div>
         <div class="form-group">
@@ -29,7 +29,7 @@
         </div>
         <div class="form-group">
             <label asp-for="Content">Содержание</label>
-            <textarea asp-for="Content" class="form-control"></textarea>
+            <textarea asp-for="Content" class="form-control auto-resize"></textarea>
             <span asp-validation-for="Content" class="text-danger"></span>
         </div>
         <button type="submit" class="btn btn-primary mt-3">Сохранить</button>
@@ -45,6 +45,7 @@
                                  ? Model.Tag.Where(t => !string.IsNullOrEmpty(t.Text)).Select(t => t.Text).ToArray() 
                                  : new string[] {}));
     </script>
+    <script src="~/js/textAreaAutoResize.js" asp-append-version="true"></script>
     <script src="~/js/tagHandler.js" asp-append-version="true"></script>
     <partial name="_ValidationScriptsPartial" />
 }

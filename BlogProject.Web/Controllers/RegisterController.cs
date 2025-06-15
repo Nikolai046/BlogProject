@@ -4,7 +4,9 @@ using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlogProject.Web.Controllers;
 
@@ -41,8 +43,12 @@ public class RegisterController(UserManager<User> userManager, UserClaimsService
 
         if (!result.Succeeded)
         {
-            Log.Error("Ошибка создания пользователя", result.Errors);
-            throw new InvalidOperationException("Ошибка создания пользователя");
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError("", error.Description);
+                Log.Error("RegisterController: Не удалось создать пользователя {Email}. Код ошибки: {Code}, Описание: {Description}", user.Email, error.Code, error.Description);
+            }
+            return View("Index", model);
         }
 
         // Назначаем роль
@@ -50,12 +56,11 @@ public class RegisterController(UserManager<User> userManager, UserClaimsService
 
         if (!roleResult.Succeeded)
         {
-            Log.Error($"Ошибка назначения роли {role}", roleResult.Errors);
+            Log.Error("RegisterController: Не удалось назначить роль '{Role}' пользователю {Email}. Ошибки: {@Errors}", role, user.Email, roleResult.Errors);
             throw new InvalidOperationException($"Ошибка назначения роли {role}");
         }
 
-        Log.Information("Пользователь {FirstName} {LastName} создан с ролью {Role}",
-            user.FirstName, user.LastName, role);
+        Log.Information("RegisterController: Пользователь {Email} создан с ролью {Role}", user.Email, role);
 
         // Создаем claims для пользователя
         var principal = await claimsService.SaveNewClaimAsync(user);
@@ -65,7 +70,7 @@ public class RegisterController(UserManager<User> userManager, UserClaimsService
             principal,
             new AuthenticationProperties { IsPersistent = false });
 
-        Log.Information("Пользователь {FirstName} {LastName} зарегистрирован и авторизован", user.FirstName, user.LastName);
+        Log.Information("RegisterController:Пользователь {Email} зарегистрирован и авторизован", user.Email);
 
         return RedirectToAction("MainPage", "AccountManager");
     }

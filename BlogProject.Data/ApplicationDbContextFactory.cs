@@ -15,8 +15,8 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .Build();
 
         // Получаем строку подключения
-        string connectionString = configuration.GetConnectionString("DefaultConnection")
-                                  ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+                               ?? throw new InvalidOperationException("Строка подключения 'DefaultConnection' не найдена..");
 
         // Настраиваем контекст
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();

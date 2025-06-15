@@ -36,7 +36,7 @@
                             </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="EditProfile">Редактировать пользователя</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="AccountManager" asp-action="UpdateUserProfile">Редактировать пользователя</a>
                         </li>
                     </ul>
 
@@ -87,8 +87,14 @@
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-@*     <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
- *@    @await RenderSectionAsync("Scripts", required: false)
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Функция для получения токена
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    </script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

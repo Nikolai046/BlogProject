@@ -9,11 +9,11 @@ namespace BlogProject.Web.Controllers;
 public class ErrorController : Controller
 {
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Index(int statusCode = 500, string? message = null)
+    public IActionResult Index(int statusCode, string requestId, string message)
     {
         var errorViewModel = new ErrorViewModel
         {
-            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            RequestId = requestId,
             StatusCode = statusCode,
             Message = message ?? "Произошла непредвиденная ошибка." // Сообщение по умолчанию
         };

@@ -69,7 +69,7 @@ try
     var app = builder.Build();
 
     // Используем пользовательский middleware для обработки исключений.
-    //app.UseCustomExceptionHandlingMiddleware();
+    app.UseCustomExceptionHandlingMiddleware();
 
     if (!app.Environment.IsDevelopment())
     {
@@ -79,7 +79,7 @@ try
     else
     {
         // Включаем страницу исключений для разработчиков, чтобы видеть ошибки во время разработки
-        app.UseDeveloperExceptionPage();
+        //app.UseDeveloperExceptionPage();
     }
 
     // Включает перенаправление HTTP на HTTPS
@@ -102,10 +102,10 @@ try
     {
         if (app.Environment.IsDevelopment())
         {
-            //var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            //db.Database.Migrate();
-            //var dataGen = scope.ServiceProvider.GetRequiredService<TestDataGenerator>();
-            //await dataGen.Generate();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            db.Database.Migrate();
+            var dataGen = scope.ServiceProvider.GetRequiredService<TestDataGenerator>();
+            await dataGen.Generate();
         }
     }
 

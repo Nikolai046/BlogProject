@@ -20,8 +20,7 @@ else
                 <div>
                     @if (comment.Editable)
                     {
-
-                        <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                        <button type="button" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
                                 onclick="editComment('@Model.ArticleId', '@comment.CommentId')">
                             <i class="bi bi-pencil-square text-primary"></i>
                         </button>
@@ -29,12 +28,10 @@ else
                     }
                     @if (comment.Deletable)
                     {
-                        <form asp-action="DeleteComment" asp-controller="AccountManager" asp-route-id="@comment.CommentId" method="post" class="d-inline">
-                            <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
-                                    onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
-                                <i class="bi bi-trash text-danger"></i>
-                            </button>
-                        </form>
+                        <button type="button" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить"
+                                onclick="deleteComment('@comment.CommentId', '@Model.ArticleId')">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
                     }
                 </div>
             </div>

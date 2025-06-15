@@ -52,11 +52,11 @@ public class LoginController(UserManager<User> userManager, UserClaimsService cl
                     IsPersistent = model.RememberMe // RememberMe функционал
                 });
 
-            Log.Information("Пользователь {Email} успешно вошел в систему", model.Email);
+            Log.Information("LoginController: Пользователь {Email} успешно вошел в систему", model.Email);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Ошибка при входе пользователя {Email}", model.Email);
+            Log.Error(e, "LoginController: Ошибка при входе пользователя {Email}", model.Email);
             ModelState.AddModelError(string.Empty, "Произошла ошибка при входе. Пожалуйста, попробуйте позже.");
             return View("Index", model);
         }
@@ -70,7 +70,7 @@ public class LoginController(UserManager<User> userManager, UserClaimsService cl
     {
         var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-        Log.Information("Пользователь {Email} вышел из системы", userEmail);
+        Log.Information("LoginController: Пользователь {Email} вышел из системы", userEmail);
         return RedirectToAction("Index", "Home");
     }
 }

@@ -4,6 +4,8 @@ namespace BlogProject.Core.Models.ViewModels;
 
 public class UpdateUserViewModel
 {
+    public string? UserId { get; set; }
+
     [Required(ErrorMessage = "Заполните это поле")]
     [Display(Name = "Имя")]
     public string? FirstName { get; set; }
@@ -12,10 +14,15 @@ public class UpdateUserViewModel
     [Display(Name = "Фамилия")]
     public string? LastName { get; set; }
 
+    [Display(Name = "Роль")]
+    public string? Role { get; set; }
+
+    public List<string?> Availableroles { get; set; } = [];
+
     [DataType(DataType.Password)]
     [Required(ErrorMessage = "Введите текущий пароль")]
     [Display(Name = "Текущий пароль")]
-    public string CurrentPassword { get; set; }
+    public string? CurrentPassword { get; set; }
 
     [DataType(DataType.Password)]
     [Display(Name = "Новый пароль")]

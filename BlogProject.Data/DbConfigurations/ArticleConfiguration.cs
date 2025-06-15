@@ -29,7 +29,7 @@ public class ArticleConfiguration : IEntityTypeConfiguration<Article>
         builder.HasOne(a => a.User)                // Одна статья имеет одного автора
             .WithMany(u => u.Articles)           // У пользователя может быть много статей
             .HasForeignKey(a => a.UserId)      // Внешний ключ
-            .OnDelete(DeleteBehavior.Restrict);  // Запрещаем каскадное удаление
+            .OnDelete(DeleteBehavior.Cascade);  // Запрещаем каскадное удаление
 
         // Связь один ко многим с Comment
         builder.HasMany(a => a.Comments)            // У статьи может быть много комментариев

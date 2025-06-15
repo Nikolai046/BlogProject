@@ -1,11 +1,9 @@
-﻿using BlogProject.Core.CustomException;
-using BlogProject.Data.Entities;
+﻿using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Security.Claims;
 using BlogProject.Core.Models.ViewModels;
-using InvalidOperationException = System.InvalidOperationException;
 
 namespace BlogProject.Web.Services;
 
@@ -15,7 +13,7 @@ public class UserClaimsService(
     GetUserPermissions permissions)
 {
     // Используем IHttpContextAccessor для доступа к HttpContext
-    private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
+    private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext недоступен.");
 
     private List<Claim> claims = [new Claim("ArticlesCount", "0")];
 
@@ -29,8 +27,8 @@ public class UserClaimsService(
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email!),
             new Claim(ClaimTypes.Name, user.UserName !),
-            new Claim(ClaimTypes.GivenName, $"{userInfo.FirstName} {userInfo.LastName}"),
-            new Claim("ArticlesCount", userInfo.ArticleCount.ToString())
+            new Claim(ClaimTypes.GivenName, $"{userInfo.Item1.FirstName} {userInfo.Item1.LastName}"),
+            new Claim("ArticlesCount", userInfo.Item1.ArticleCount.ToString())
         ];
 
         // Добавляем все роли пользователя
@@ -45,53 +43,73 @@ public class UserClaimsService(
         return principal;
     }
 
-    public async Task UpdateArticlesCountClaim(string userId, int newCount)
-    {
-        var user = await userManager.FindByIdAsync(userId);
-        if (user == null) return;
-
-        // Создаем полностью новый principal с обновленными claims
-        var principal = await CreateUserPrincipalAsync(user);
-
-        // Обновляем claim ArticlesCount в новом principal
-        var identity = (ClaimsIdentity)principal.Identity!;
-        var existingClaim = identity.FindFirst("ArticlesCount");
-
-        if (existingClaim != null)
-        {
-            identity.RemoveClaim(existingClaim);
-        }
-        identity.AddClaim(new Claim("ArticlesCount", newCount.ToString()));
-
-        // Обновляем аутентификацию через HttpContext
-        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
-        {
-            IsPersistent = false
-        });
-    }
-
     public async Task RefreshUserClaims(UserViewModel model)
     {
         var user = await userManager.FindByIdAsync(model.UserId!);
-        if (user == null) return;
-        // Создаем полностью новый principal с обновленными claims
-        var principal = await CreateUserPrincipalAsync(user);
+        if (user == null)
+        {
+            Log.Error("UserClaimsService: При обновлении клаймов пользователь: {UserId} не найден", model.UserId);
+            return;
+        }
 
-        // Обновляем claim ArticlesCount в новом principal
-        var identity = (ClaimsIdentity)principal.Identity!;
-        var existingClaim = identity.FindFirst("ArticlesCount");
-
+        // Обновляем claim ArticlesCount в базе данных
+        var existingClaim = (await userManager.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == "ArticlesCount");
         if (existingClaim != null)
         {
-            identity.RemoveClaim(existingClaim);
+            await userManager.RemoveClaimAsync(user, existingClaim);
         }
-        identity.AddClaim(new Claim("ArticlesCount", model.ArticleCount.ToString()));
+        await userManager.AddClaimAsync(user, new Claim("ArticlesCount", model.ArticleCount.ToString()));
 
-        // Обновляем аутентификацию через HttpContext
-        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
+        // Если текущий пользователь совпадает с целевым, обновляем сессию
+        var currentUserId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (model.UserId == currentUserId)
         {
-            IsPersistent = false
-        });
+            // Создаём новый ClaimsPrincipal
+            var principal = await CreateUserPrincipalAsync(user);
+
+            // Обновляем claim ArticlesCount в ClaimsPrincipal
+            var identity = (ClaimsIdentity)principal.Identity!;
+            var sessionClaim = identity.FindFirst("ArticlesCount");
+            if (sessionClaim != null)
+            {
+                identity.RemoveClaim(sessionClaim);
+            }
+            identity.AddClaim(new Claim("ArticlesCount", model.ArticleCount.ToString()));
+
+            // Обновляем claim роли
+            var roleClaim = identity.FindFirst(ClaimTypes.Role);
+            if (roleClaim != null)
+            {
+                identity.RemoveClaim(roleClaim);
+            }
+            var currentRoles = await userManager.GetRolesAsync(user);
+            foreach (var role in currentRoles)
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Получаем текущее значение IsPersistent
+            var authResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+            if (authResult == null)
+            {
+                Log.Warning("UserClaimsService: Результат аутентификации равен null для пользователя {UserId}", model.UserId);
+                return;
+            }
+            var isPersistent = authResult?.Properties?.IsPersistent ?? false;
+
+            // Обновляем сессию с сохранением IsPersistent
+            await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
+            {
+                IsPersistent = isPersistent
+            });
+            Log.Information("UserClaimsService: Обновленная сессия для текущего пользователя: {Email}, Роли: {Roles}", user.Email, string.Join(", ", currentRoles));
+        }
+        else
+        {
+            Log.Information("UserClaimsService: Обновление SecurityStamp для пользователя: {Email}", user.Email);
+            // Для другого пользователя обновляем SecurityStamp, чтобы завершить его сессии
+            await userManager.UpdateSecurityStampAsync(user);
+        }
     }
 
     public async Task<ClaimsPrincipal> SaveNewClaimAsync(User user)
@@ -100,13 +118,15 @@ public class UserClaimsService(
         var claimResult = await userManager.AddClaimsAsync(user, claims);
         if (!claimResult.Succeeded)
         {
-            Log.Error($"Ошибка создания клайма для пользователя {user.FirstName} {user.LastName}, {claimResult.Errors}");
+            var errorMessages = string.Join("; ", claimResult.Errors.Select(e => e.Description));
+            Log.Error("UserClaimsService: Ошибка создания клайма для пользователя {FirstName} {LastName}: {Errors}", user.FirstName, user.LastName, errorMessages);
         }
         else
         {
-            Log.Information($"Клайм для пользователя {user.FirstName} {user.LastName} успешно создан");
+            Log.Information("UserClaimsService: Клайм для пользователя {user.FirstName} {user.LastName} успешно создан", user.FirstName,
+             user.LastName);
         }
-
         return principal;
+
     }
 }

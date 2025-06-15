@@ -1,6 +1,5 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
-using System.Threading.Tasks;
 
 namespace BlogProject.Data.Methods;
 
@@ -11,21 +10,21 @@ public interface IMethods
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetAllArticles(int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool)> GetAllArticlesAsync(int page, int pageSize = 10);
 
     /// <summary>
     /// Получает список всех статей всех пользователей с фильтрацией по тегам с пагинацией.
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTag(List<string> tags, int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10);
 
     /// <summary>
     /// Получает список статей конкретного пользователя с пагинацией.
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetArticlesByUserId(string? userId, int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10);
 
     /// <summary>
     /// Получает статью по указанному идентификатору.
@@ -33,47 +32,47 @@ public interface IMethods
     /// </summary>
     /// <param name="articleId">Идентификатор статьи, которую необходимо получить.</param>
     /// <returns>Возвращает объект ArticleViewModel, если статья найдена; в противном случае - null.</returns>
-    Task<ArticleViewModel?> GetArticleById(int articleId);
+    Task<ArticleViewModel?> GetArticleByIdAsync(int articleId);
 
     /// <summary>
     /// Создаёт новую статью с указанным заголовком, содержимым и тегами.
     /// </summary>
-    Task CreateArticle(ArticleViewModel model);
+    Task CreateArticleAsync(ArticleViewModel model);
 
     /// <summary>
     /// Редактирует статью по её ID. Доступ зависит от роли.
     /// </summary>
-    Task EditArticle(int articleId, ArticleViewModel model);
+    Task EditArticleAsync(int articleId, ArticleViewModel model);
 
     /// <summary>
     /// Удаляет статью по её ID. Доступ зависит от роли.
     /// </summary>
-    Task DeleteArticle(int articleId);
+    Task DeleteArticleAsync(int articleId);
 
     /// <summary>
     /// Добавляет комментарий к статье по её ID.
     /// </summary>
-    Task CreateComment(int articleId, CommentViewModel model);
+    Task CreateCommentAsync(int articleId, CommentViewModel model);
 
     /// <summary>
     /// Удаляет комментарий по его ID. Доступ зависит от роли.
     /// </summary>
-    Task EditComment(int commentId, CommentViewModel model);
+    Task EditCommentAsync(int commentId, CommentViewModel model);
 
     /// <summary>
     /// Удаляет комментарий по его ID. Доступ зависит от роли.
     /// </summary>
-    Task DeleteComment(int commentId);
+    Task DeleteCommentAsync(int commentId);
 
     /// <summary>
     /// Редактирует профиль пользователя по его ID. Доступ зависит от роли.
     /// </summary>
-    Task<IdentityResult> EditUserProfile(string userId, UpdateUserViewModel profile);
+    Task<IdentityResult> EditUserProfileAsync(UpdateUserViewModel profile, bool isAdminEditingOtherUser);
 
     /// <summary>
     /// Удаляет пользователя по его ID. Доступ зависит от роли.
     /// </summary>
-    Task DeleteUser(string userId);
+    Task DeleteUserAsync(string userId);
 
     /// <summary>
     /// Возвращает список пользователей и флаг hasMore.
@@ -82,9 +81,26 @@ public interface IMethods
     /// <returns>Список пользователей.</returns>
     Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10);
 
-    Task<UserViewModel> GetUserInfoAsync(string? userId = null);
+    /// <summary>
+    /// Асинхронно получает информацию о пользователе.
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя. Если не указан, будет возвращена информация о текущем пользователе.</param>
+    /// <returns>Кортеж, содержащий объект <see cref="UserViewModel"/> с данными пользователя и список строк содержащий все роли.</returns>
+    Task<(UserViewModel, List<string>)> GetUserInfoAsync(string? userId = null);
 
-    Task <string?> FindUserIdsByNameAsync(string name);
+    /// <summary>
+    /// Асинхронно получает информацию о пользователе по идентификатору статьи.
+    /// </summary>
+    /// <param name="articleId">Идентификатор статьи, для которой требуется получить информацию о пользователе.</param>
+    /// <returns>Объект типа <see cref="UserViewModel"/>, содержащий информацию о пользователе.</returns>
+    Task<UserViewModel> GetUserInfoByArticleIdAsync(int articleId);
+
+    /// <summary>
+    /// Асинхронно находит идентификаторы пользователей по заданному имени.
+    /// </summary>
+    /// <param name="name">Имя пользователя, по которому будет выполнен поиск.</param>
+    /// <returns>Возвращает строку с идентификаторами пользователей или null, если пользователи не найдены.</returns>
+    Task<string?> FindUserIdsByNameAsync(string name);
 }
 
 /*

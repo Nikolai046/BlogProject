@@ -5,29 +5,11 @@ namespace BlogProject.Data.Entities;
 
 public class User : IdentityUser
 {
-    [Required]
-    [MaxLength(50)]
     public string? FirstName { get; set; }
 
-    [Required]
-    [MaxLength(50)]
     public string? LastName { get; set; }
 
-    [Required]
-    [EmailAddress]
-    public override string? Email
-    {
-        get => base.Email!;
-        set
-        {
-            base.Email = value;
-            // Устанавливаем UserName только если он еще не задан
-            if (string.IsNullOrEmpty(base.UserName))
-            {
-                base.UserName = value;
-            }
-        }
-    }
+    public override string? Email { get; set; }
 
     public DateTime RegistrationDate { get; set; } = DateTime.Now;
 

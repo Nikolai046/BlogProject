@@ -22,8 +22,8 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
                 new() {
                     FirstName = "Ivan",
                     LastName = "Ivanov",
-                    Email = "ivan.ivanov@example.com",
-                    UserName = "ivan.ivanov@example.com"
+                    Email = "admin@example.com",
+                    UserName = "admin@example.com"
                 },
                 "Administrator",
                 "123456"
@@ -32,8 +32,8 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
                 new() {
                     FirstName = "Petr",
                     LastName = "Petrov",
-                    Email = "petr.petrov@example.com",
-                    UserName = "petr.petrov@example.com"
+                    Email = "moderator@example.com",
+                    UserName = "moderator@example.com"
                 },
                 "Moderator",
                 "123456"
@@ -42,7 +42,7 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
                 new() {
                     FirstName = "Sidor",
                     LastName = "Sidorov",
-                    Email = "sidor.sidorov@example.com",
+                    Email = "user@example.com",
                     UserName = "sidor.sidorov@example.com"
                 },
                 "User",
@@ -57,7 +57,7 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
 
             if (!result.Succeeded)
             {
-                LogErrors("Ошибка создания пользователя", result.Errors);
+                LogErrors($"TestDataGenerator: Ошибка создания пользователя {user.Email}", result.Errors);
                 continue;
             }
 
@@ -66,13 +66,12 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
 
             if (!roleResult.Succeeded)
             {
-                LogErrors($"Ошибка назначения роли {role}", roleResult.Errors);
+                LogErrors($"TestDataGenerator: Ошибка назначения роли {role} пользователю {user.Email}", roleResult.Errors);
             }
             else
             {
                 Log.Information(
-                    "Пользователь {FirstName} {LastName} создан с ролью {Role}",
-                    user.FirstName, user.LastName, role);
+                    "TestDataGenerator: Пользователь {Email} создан с ролью {Role}", user.Email, role);
             }
 
             // Создаем claims для пользователя
@@ -89,7 +88,7 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
             if (!await roleManager.RoleExistsAsync(role))
             {
                 await roleManager.CreateAsync(new IdentityRole(role));
-                Log.Information("Создана роль: {Role}", role);
+                Log.Information("TestDataGenerator: Создана роль: {Role}", role);
             }
         }
     }
@@ -99,7 +98,6 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
         foreach (var error in errors)
         {
             Log.Error("{Prefix}: {Code} - {Description}", prefix, error.Code, error.Description);
-            Console.WriteLine($"{prefix}: {error.Code} - {error.Description}");
         }
     }
 
@@ -118,12 +116,14 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
         var claimResult = await userManager.AddClaimsAsync(user, claims);
         if (!claimResult.Succeeded)
         {
-            Log.Error($"Ошибка создания клайма для пользователя {user.FirstName} {user.LastName}, {claimResult.Errors}");
+            var errorMessages = string.Join("; ", claimResult.Errors.Select(e => $"{e.Code}: {e.Description}"));
+            Log.Error("TestDataGenerator: Ошибка создания клайма для пользователя {Email}: {Errors}", user.Email, errorMessages);
         }
         else
         {
             Log.Information(
-                "Клайм для пользователя {FirstName} {LastName} успешно создан ", user.FirstName, user.LastName);
+                "TestDataGenerator: Клайм для пользователя {Email} успешно создан ", user.Email);
         }
+
     }
 }

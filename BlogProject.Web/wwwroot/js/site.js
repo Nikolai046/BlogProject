@@ -1,144 +1,159 @@
-﻿        // Скрипт для удаления комментария
-        function deleteComment(commentId, articleId) {
-            if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) {
-                return;
-            }
-
-        $.ajax({
-            url: '/AccountManager/delete_comment',
-        type: 'POST',
-        data: {id: commentId },
-        success: function(response) {
-                        // Удаляем блок комментария из DOM
-                        var commentDiv = $(`.comment[data-comment-id='${commentId}']`);
-        commentDiv.remove();
-
-        // Проверяем, остались ли комментарии, и добавляем placeholder, если их нет
-        var commentsSection = $(`#comments-section-${articleId}`);
-        if (commentsSection.find('.comment').length === 0) {
-            commentsSection.html('<p class="text-muted">Комментариев пока нет.</p>');
-                        }
-                      },
-        error: function(xhr, status, error) {
-            console.error('Ошибка:', xhr.responseText);
-        alert('Произошла ошибка при удалении комментария.');
-                }
-            });
-        }
-
-        // Скрипт для добавления комментария
-        function addComment(articleId) {
-            var commentText = $('#commentText-' + articleId).val();
-        if (commentText.trim() === '') {
-            alert('Введите текст комментария.');
+﻿// Скрипт для удаления комментария
+function deleteComment(commentId, articleId) {
+    if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) {
         return;
-            }
-        $.ajax({
-            url: '/AccountManager/create_comment',
+    }
+    const token = getAntiForgeryToken();
+    $.ajax({
+        url: '/AccountManager/delete_comment',
         type: 'POST',
-        data: {ArticleId: articleId, Text: commentText },
-        success: function(response) {
-            // Обновляем только секцию комментариев
-            $('#comments-section-' + articleId).html(response);
-        $('#commentText-' + articleId).val('');
-                },
-        error: function(xhr, status, error) {
-            console.error('Ошибка:', xhr.responseText);
-                }
-            });
-        }
+        headers: {
+            "RequestVerificationToken": token
+        },
+        data: { id: commentId },
+        success: function (response) {
+            // Удаляем блок комментария из DOM
+            var commentDiv = $(`.comment[data-comment-id='${commentId}']`);
+            commentDiv.remove();
 
-        // Скрипт для редактирования комментария
-        function editComment(articleId, commentId) {
-            var commentDiv = $(".comment[data-comment-id='" + commentId + "']");
-        var commentText = commentDiv.find('.comment-text');
-        var oldText = commentText.text().trim();
-        var dateInfo = commentDiv.find('.text-muted.small');
-
-        // Проверяем, есть ли уже существующее поле редактирования
-        var editField = commentDiv.find('textarea');
-            if (editField.length > 0) {
-                return;
+            // Проверяем, остались ли комментарии, и добавляем placeholder, если их нет
+            var commentsSection = $(`#comments-section-${articleId}`);
+            if (commentsSection.find('.comment').length === 0) {
+                commentsSection.html('<p class="text-muted">Комментариев пока нет.</p>');
             }
+        },
+        error: function (xhr, status, error) {
+            console.error('Ошибка:', xhr.responseText);
+            alert('Произошла ошибка при удалении комментария.');
+        }
+    });
+}
 
-        // Показываем поле ввода
-        editField = $('<textarea>', {
-            class: 'form-control',
-            cols: '40',
-            rows: '3'
-            }).val(oldText);
+// Скрипт для добавления комментария
+function addComment(articleId) {
+    const commentText = $('#commentText-' + articleId).val().trim();
+    if (!commentText) {
+        alert('Введите текст комментария.');
+        return;
+    }
 
-            // Создаем кнопки "Сохранить" и "Отмена"
-            var saveBtn = $('<button>', {
-                type: 'button',
-                class: 'btn btn-primary my-2',
-                text: 'Сохранить'
-            });
+    const token = getAntiForgeryToken();
+    $.ajax({
+        url: '/AccountManager/create_comment',
+        type: 'POST',
+        headers: { "RequestVerificationToken": token },
+        data: { ArticleId: articleId, Text: commentText },
+        success: function (response) {
+            // Вставляем новые комментарии
+            const commentsSection = $(`#comments-section-${articleId}`);
+            commentsSection.html(response);
+            $('#commentText-' + articleId).val('');
 
-                var cancelBtn = $('<button>', {
-                    type: 'button',
-                    class: 'btn btn-secondary my-2',
-                    text: 'Отмена'
-            });
+            //  Удаляем все скрытые токены из секции комментариев
+            commentsSection.find('input[name="__RequestVerificationToken"]').remove();
 
-                    // Заменяем текст комментария на поле ввода и кнопки
-                    commentText.replaceWith(editField);
-                    commentDiv.append(saveBtn).append(cancelBtn);
+        },
+        error: function (xhr) {
+            console.error('Ошибка:', xhr.responseText);
+        }
+    });
+}
 
-                    // Обработчик сохранения комментария
-                    saveBtn.on('click', function() {
-                var editedText = editField.val().trim();
-                    if (editedText !== '') {
-                        $.ajax({
-                            url: '/AccountManager/edit_comment',
-                            type: 'POST',
-                            data: { CommentId: commentId, Text: editedText, ArticleId: articleId },
-                            success: function (response) {
-                                // Обновляем текст комментария
-                                commentDiv.find('.comment-text').text(editedText);
-                                // Возвращаем исходное состояние
-                                var newCommentText = $('<p>', {
-                                    class: 'comment-text card-text',
-                                    style: 'white-space: pre-wrap;'
-                                }).text(editedText);
 
-                                editField.replaceWith(newCommentText);
+// Скрипт для редактирования комментария
+function editComment(articleId, commentId) {
+    var commentDiv = $(".comment[data-comment-id='" + commentId + "']");
+    var commentText = commentDiv.find('.comment-text');
+    var oldText = commentText.text().trim();
+    var dateInfo = commentDiv.find('.text-muted.small');
+    const token = getAntiForgeryToken();
 
-                                // Форматируем текущую дату в формате dd.MM.yyyy HH:mm
-                                var now = new Date();
-                                var day = String(now.getDate()).padStart(2, '0');
-                                var month = String(now.getMonth() + 1).padStart(2, '0');
-                                var year = now.getFullYear();
-                                var hours = String(now.getHours()).padStart(2, '0');
-                                var minutes = String(now.getMinutes()).padStart(2, '0');
-                                var formattedDate = `${day}.${month}.${year} ${hours}:${minutes}`;
+    // Проверяем, есть ли уже существующее поле редактирования
+    var editField = commentDiv.find('textarea');
+    if (editField.length > 0) {
+        return;
+    }
 
-                                // Обновляем дату комментария
-                                var currentDateText = dateInfo.text();
-                                var createdPart = currentDateText.split(' | Обновлено:')[0];
-                                var newDateText = createdPart + ' | Обновлено: ' + formattedDate;
-                                dateInfo.text(newDateText);
+    // Показываем поле ввода
+    editField = $('<textarea>', {
+        class: 'form-control',
+        cols: '40',
+        rows: '3'
+    }).val(oldText);
 
-                                saveBtn.remove();
-                                cancelBtn.remove();
-                            },
-                            error: function (xhr, status, error) {
-                                console.error('Ошибка при сохранении комментария:', xhr.responseText);
-                                alert('Произошла ошибка при сохранении комментария.');
+    // Создаем кнопки "Сохранить" и "Отмена"
+    var saveBtn = $('<button>', {
+        type: 'button',
+        class: 'btn btn-primary my-2',
+        text: 'Сохранить'
+    });
 
-                            }
-                        });
-                } else {
-                        alert('Введите текст комментария.');
-                }
-            });
+    var cancelBtn = $('<button>', {
+        type: 'button',
+        class: 'btn btn-secondary my-2',
+        text: 'Отмена'
+    });
 
-                    // Обработчик отмены редактирования
-                    cancelBtn.on('click', function() {
-                        // Возвращаем исходный текст комментария и удаляем кнопки
-                        editField.replaceWith(commentText.clone(true));
+    // Заменяем текст комментария на поле ввода и кнопки
+    commentText.replaceWith(editField);
+    commentDiv.append(saveBtn).append(cancelBtn);
+
+    // Обработчик сохранения комментария
+    saveBtn.on('click', function () {
+        var editedText = editField.val().trim();
+        if (editedText !== '') {
+            $.ajax({
+                url: '/AccountManager/edit_comment',
+                type: 'POST',
+                headers: {
+                    "RequestVerificationToken": token
+                },
+                data: { CommentId: commentId, Text: editedText, ArticleId: articleId },
+                success: function (response) {
+                    // Обновляем текст комментария
+                    commentDiv.find('.comment-text').text(editedText);
+                    // Возвращаем исходное состояние
+                    var newCommentText = $('<p>', {
+                        class: 'comment-text card-text',
+                        style: 'white-space: pre-wrap;'
+                    }).text(editedText);
+
+                    editField.replaceWith(newCommentText);
+
+                    // Форматируем текущую дату в формате dd.MM.yyyy HH:mm
+                    var now = new Date();
+                    var day = String(now.getDate()).padStart(2, '0');
+                    var month = String(now.getMonth() + 1).padStart(2, '0');
+                    var year = now.getFullYear();
+                    var hours = String(now.getHours()).padStart(2, '0');
+                    var minutes = String(now.getMinutes()).padStart(2, '0');
+                    var formattedDate = `${day}.${month}.${year} ${hours}:${minutes}`;
+
+                    // Обновляем дату комментария
+                    var currentDateText = dateInfo.text();
+                    var createdPart = currentDateText.split(' | Обновлено:')[0];
+                    var newDateText = createdPart + ' | Обновлено: ' + formattedDate;
+                    dateInfo.text(newDateText);
+
                     saveBtn.remove();
                     cancelBtn.remove();
-            });
-        }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Ошибка при сохранении комментария:', xhr.responseText);
+                    alert('Произошла ошибка при сохранении комментария.');
 
+                }
+            });
+        } else {
+            alert('Введите текст комментария.');
+        }
+    });
+
+    // Обработчик отмены редактирования
+    cancelBtn.on('click', function () {
+        // Возвращаем исходный текст комментария и удаляем кнопки
+        editField.replaceWith(commentText.clone(true));
+        saveBtn.remove();
+        cancelBtn.remove();
+    });
+}

@@ -7,7 +7,6 @@
     <div class="row">
         <div class="col-md-8 offset-md-2 text-center">
             <h1 class="display-1 text-danger">Ошибка @Model.StatusCode</h1>
-            @* <h2 class="text-muted">@ViewData["Title"]</h2> *@
 
             @if (!string.IsNullOrEmpty(Model.Message))
             {
@@ -22,9 +21,9 @@
 
             @if (Model.ShowRequestId)
             {
-                <p class="mt-3">
-                    <small><strong>ID запроса:</strong> <code>@Model.RequestId</code></small>
-                </p>
+                <p class="mb-0 mt-3"><small><strong>ID запроса:</strong> <code>@Model.RequestId</code></small></p>
+                <p><small><strong>Пожалуйста, сообщите этот идентификатор в службу поддержки.</strong></small></p>
+
             }
 
             <div class="mt-4">

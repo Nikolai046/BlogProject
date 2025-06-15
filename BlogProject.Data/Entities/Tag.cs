@@ -6,7 +6,7 @@ public class Tag
 {
     public int Id { get; set; }
 
-    [Required][MaxLength(50)] public string Name { get; set; }
+    public required string Name { get; set; }
 
     // Связь многие-ко-многим
     public virtual ICollection<Article>? Articles { get; set; }

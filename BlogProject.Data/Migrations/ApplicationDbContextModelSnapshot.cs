@@ -84,7 +84,6 @@ namespace BlogProject.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -125,7 +124,6 @@ namespace BlogProject.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
@@ -133,13 +131,9 @@ namespace BlogProject.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("LockoutEnabled")
@@ -338,7 +332,7 @@ namespace BlogProject.Data.Migrations
                     b.HasOne("BlogProject.Data.Entities.User", "User")
                         .WithMany("Articles")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -355,8 +349,7 @@ namespace BlogProject.Data.Migrations
                     b.HasOne("BlogProject.Data.Entities.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Article");
 

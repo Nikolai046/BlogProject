@@ -1,0 +1,135 @@
+﻿@using System.Security.Claims
+@model BlogProject.Core.Models.ViewModels.UpdateUserViewModel
+
+@{
+    ViewData["Title"] = "Редактирование профиля";
+    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var hidden = (User.IsInRole("Administrator") && currentUserId != Model.UserId);
+    
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Редактирование профиля</h1>
+
+    <!-- Уведомления -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Форма -->
+    <form asp-controller="AccountManager" asp-action="UpdateUserProfile" method="post" class="needs-validation" novalidate>
+        
+        <input type="hidden" asp-for="UserId" />
+        <div class="row">
+            <!-- Имя -->
+            <div class="col-md-6 mb-3">
+                <label asp-for="FirstName" class="form-label"></label>
+                <input asp-for="FirstName" class="form-control" required readonly="@hidden" ) />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+            <!-- Фамилия -->
+            <div class="col-md-6 mb-3">
+                <label asp-for="LastName" class="form-label"></label>
+                <input asp-for="LastName" class="form-control" required readonly="@hidden" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+        </div>
+
+        <!-- Роль -->
+        <div class="mb-3">
+            <label asp-for="Role" class="form-label"></label>
+            @if (User.IsInRole("Administrator"))
+            {
+                <select asp-for="Role" class="form-select" asp-items="@(new SelectList(Model.Availableroles))"></select>
+                <span asp-validation-for="Role" class="text-danger"></span>
+            }
+            else
+            {
+                <input asp-for="Role" class="form-control" readonly />
+            }
+        </div>
+
+        <!-- Текущий пароль -->
+        @if (!hidden)
+        {
+            <div class="mb-3">
+                <label asp-for="CurrentPassword" class="form-label"></label>
+                <input asp-for="CurrentPassword" class="form-control" type="password" required />
+                <span asp-validation-for="CurrentPassword" class="text-danger"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="CurrentPassword" value="" />
+        }
+
+        <!-- Новый пароль -->
+        <div class="mb-3" style="@(hidden ? "display:none;" : "")">
+            <label asp-for="NewPassword" class="form-label"></label>
+            <input asp-for="NewPassword" class="form-control" type="password" />
+            <span asp-validation-for="NewPassword" class="text-danger"></span>
+            <small class="form-text text-muted">Оставьте пустым, если не хотите менять пароль.</small>
+        </div>
+
+        <!-- Подтверждение пароля -->
+        <div class="style= mb-3" style="@(hidden ? "display:none;" : "")">
+            <label asp-for="ConfirmPassword" class="form-label"></label>
+            <input asp-for="ConfirmPassword" class="form-control" type="password" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <!-- Кнопка отправки -->
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a asp-action="MainPage" asp-controller="AccountManager" class="btn btn-secondary ms-2">Отмена</a>
+        </div>
+    </form>
+    @if (!hidden)
+    {
+        <div class="mt-5">
+            <form asp-controller="AccountManager" asp-action="DeleteUserProfile" method="post">
+                <input type="hidden" name="userId" value="@Model.UserId" />
+                <button type="submit" class="btn btn-danger w-100 py-3"
+                        onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите полностью удалить свой профиль? Это действие невозможно отменить!');">
+                    <i class="bi bi-trash-fill"></i> Удалить мой профиль
+                </button>
+            </form>
+        </div>
+    }
+</div>
+
+
+
+@section Scripts {
+        <!-- Подключение валидации -->
+        <partial name="_ValidationScriptsPartial" />
+        
+       <!-- Кастомный JavaScript для валидации -->
+        <script>
+            // Включение валидации Bootstrap
+            (function () {
+                'use strict';
+                var forms = document.querySelectorAll('.needs-validation');
+                Array.prototype.slice.call(forms).forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            })();
+        </script>
+}
