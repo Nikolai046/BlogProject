@@ -402,7 +402,6 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         await context.SaveChangesAsync();
         Log.Information("ModeratorMethods: Комментарий {CommentId} обновлен пользователем {UserId}", commentId, currentUserId);
-
     }
 
     public async Task DeleteCommentAsync(int commentId)
@@ -414,7 +413,6 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         await context.SaveChangesAsync();
         Log.Information("ModeratorMethods: Комментарий {CommentId} удален пользователем {UserId}", commentId, currentUserId);
-
     }
 
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
@@ -523,7 +521,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             .Distinct()
             .ToListAsync();
 
-        // Проверяем, что текущий пользователь имеет право просматривать информацию о запрашиваемом пользователе 
+        // Проверяем, что текущий пользователь имеет право просматривать информацию о запрашиваемом пользователе
         if (!userRoles.Contains("Administrator") && userId != currentUserId)
             throw new ForbiddenException("Вы не можете просматривать информацию об этом пользователе");
 
@@ -541,7 +539,6 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
     public async Task<UserViewModel> GetUserInfoByArticleIdAsync(int articleId)
     {
-
         var userId = await context.Articles
             .Where(a => a.Id == articleId)
             .Select(a => a.UserId)
@@ -624,7 +621,6 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             var currentRoles = await userManager.GetRolesAsync(user);
             await userManager.RemoveFromRolesAsync(user, currentRoles);
             await userManager.AddToRoleAsync(user, profile.Role!);
-
 
             // Сохранение изменений профиля
             var updateResult = await userManager.UpdateAsync(user);

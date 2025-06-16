@@ -24,6 +24,7 @@ public class ArticleViewModel
     public bool Editable { get; set; }
 
     public IEnumerable<TagViewModel>? Tag { get; set; }
+
     //public List<TagViewModel> Tag { get; set; } = [];
     public IEnumerable<CommentViewModel>? Comments { get; set; }
 }

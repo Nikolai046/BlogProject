@@ -4,9 +4,7 @@ using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlogProject.Web.Controllers;
 

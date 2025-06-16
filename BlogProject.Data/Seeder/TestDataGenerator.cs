@@ -124,6 +124,5 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
             Log.Information(
                 "TestDataGenerator: Клайм для пользователя {Email} успешно создан ", user.Email);
         }
-
     }
 }

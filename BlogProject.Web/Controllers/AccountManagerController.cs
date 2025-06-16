@@ -1,7 +1,6 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using BlogProject.Web.Services;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +9,6 @@ using System.Security.Claims;
 using System.Text.Json;
 
 namespace BlogProject.Web.Controllers;
-
 
 [Authorize]
 [Route("[controller]")]
@@ -35,7 +33,6 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         ViewBag.UserId = userId;
         return View(result);
     }
-
 
     [HttpGet("articles_by_username")]
     public async Task<IActionResult> ArticlesByUsername(string userName, int page = 1, int pageSize = 10, int? articleId = null)
@@ -77,7 +74,6 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         };
         return View(model);
     }
-
 
     [HttpPost("create_article")]
     [ValidateAntiForgeryToken]
@@ -151,7 +147,6 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         return PartialView("_CommentsPartial", updatedArticle);
     }
 
-
     [HttpPost("edit_comment")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditComment(int commentId, string text)
@@ -166,16 +161,14 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         return Ok();
     }
 
-
     [HttpPost("delete_comment")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteComment(int id)
     {
         var methods = permissions.GetMethods();
         await methods.DeleteCommentAsync(id);
-       return Ok();
+        return Ok();
     }
-
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -219,7 +212,6 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         };
 
         return View(model);
-
     }
 
     [HttpPost("update_user_profile")]
@@ -256,7 +248,7 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
 
     [HttpPost("delete_user_profile")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteUserProfile(string userId, int page=1)
+    public async Task<IActionResult> DeleteUserProfile(string userId, int page = 1)
     {
         var isAdminDeleteOtherUser = User.IsInRole("Administrator") &&
                                      User.FindFirstValue(ClaimTypes.NameIdentifier) != userId;
@@ -279,7 +271,7 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
                 return RedirectToAction("Index", "Home");
             }
 
-            return RedirectToAction("GetAllUsers", new{page});
+            return RedirectToAction("GetAllUsers", new { page });
         }
         catch (Exception ex)
         {
@@ -289,5 +281,3 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
         }
     }
 }
-
-

@@ -46,7 +46,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 "ApplicationDbContext: Ошибка при сохранении изменений в базе данных. " +
                 "Тип исключения: {ExceptionType}, Сообщение: {Message}, StackTrace: {StackTrace}",
                 ex.GetType().FullName, ex.Message, ex.StackTrace); throw;
-
         }
     }
 }

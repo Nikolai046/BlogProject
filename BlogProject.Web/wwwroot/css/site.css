@@ -57,7 +57,7 @@ body {
     transition: height 0.2s ease; /* ѕлавное изменение высоты */
 }
 
-    /* Ёффект при наведении на €чейку */
+/* Ёффект при наведении на €чейку */
 .table td:not(.no-click):hover::after {
     content: "";
     position: absolute;

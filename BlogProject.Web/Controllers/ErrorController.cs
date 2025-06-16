@@ -1,7 +1,6 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 
 namespace BlogProject.Web.Controllers;
 

@@ -388,7 +388,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
-        Log.Information("AdministratorMethods: Комментарий {Id} добавлен к статье {ArticleId} пользователем {UserId}",comment.Id , articleId, currentUserId);
+        Log.Information("AdministratorMethods: Комментарий {Id} добавлен к статье {ArticleId} пользователем {UserId}", comment.Id, articleId, currentUserId);
     }
 
     public async Task EditCommentAsync(int commentId, CommentViewModel model)
@@ -407,7 +407,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         await context.SaveChangesAsync();
         Log.Information("AdministratorMethods: Комментарий {CommentId} обновлен пользователем {UserId}", commentId, currentUserId);
-
     }
 
     public async Task DeleteCommentAsync(int commentId)
@@ -417,7 +416,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         context.Comments.Remove(comment);
         await context.SaveChangesAsync();
         Log.Information("AdministratorMethods: Комментарий {CommentId} удален пользователем {UserId}", commentId, currentUserId);
-
     }
 
     public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
@@ -540,7 +538,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
     public async Task<UserViewModel> GetUserInfoByArticleIdAsync(int articleId)
     {
-
         var userId = await context.Articles
             .Where(a => a.Id == articleId)
             .Select(a => a.UserId)
@@ -567,7 +564,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
     public async Task<IdentityResult> EditUserProfileAsync(UpdateUserViewModel profile, bool isAdminEditingOtherUser)
     {
-
         var user = await userManager.FindByIdAsync(profile.UserId!) ?? throw new NotFoundException("Пользователь не найден");
 
         // Проверяем, есть ли уже открытая транзакция
@@ -625,7 +621,6 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
             var currentRoles = await userManager.GetRolesAsync(user);
             await userManager.RemoveFromRolesAsync(user, currentRoles);
             await userManager.AddToRoleAsync(user, profile.Role!);
-
 
             // Сохранение изменений профиля
             var updateResult = await userManager.UpdateAsync(user);

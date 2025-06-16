@@ -1,9 +1,9 @@
-﻿using BlogProject.Data.Entities;
+﻿using BlogProject.Core.Models.ViewModels;
+using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Security.Claims;
-using BlogProject.Core.Models.ViewModels;
 
 namespace BlogProject.Web.Services;
 
@@ -127,6 +127,5 @@ public class UserClaimsService(
              user.LastName);
         }
         return principal;
-
     }
 }

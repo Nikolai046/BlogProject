@@ -3,10 +3,8 @@ using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace BlogProject.Data.Methods;
 

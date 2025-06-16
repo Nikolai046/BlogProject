@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace BlogProject.Data.Entities;
+﻿namespace BlogProject.Data.Entities;
 
 /// <summary>
 /// Представляет статью с заголовком, содержимым, датами создания и обновления,

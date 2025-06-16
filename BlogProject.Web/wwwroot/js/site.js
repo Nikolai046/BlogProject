@@ -51,14 +51,12 @@ function addComment(articleId) {
 
             //  Удаляем все скрытые токены из секции комментариев
             //commentsSection.find('input[name="__RequestVerificationToken"]').remove();
-
         },
         error: function (xhr) {
             console.error('Ошибка:', xhr.responseText);
         }
     });
 }
-
 
 // Скрипт для редактирования комментария
 function editComment(articleId, commentId) {
@@ -141,7 +139,6 @@ function editComment(articleId, commentId) {
                 error: function (xhr, status, error) {
                     console.error('Ошибка при сохранении комментария:', xhr.responseText);
                     alert('Произошла ошибка при сохранении комментария.');
-
                 }
             });
         } else {
