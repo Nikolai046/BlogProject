@@ -382,7 +382,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
-        Log.Information("ModeratorMethods: Комментарий добавлен к статье {ArticleId} пользователем {UserId}", articleId, currentUserId);
+        Log.Information("AdministratorMethods: Комментарий {Id} добавлен к статье {ArticleId} пользователем {UserId}", comment.Id, articleId, currentUserId);
     }
 
     public async Task EditCommentAsync(int commentId, CommentViewModel model)

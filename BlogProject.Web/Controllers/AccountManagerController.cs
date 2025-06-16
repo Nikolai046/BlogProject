@@ -1,8 +1,9 @@
 ﻿using BlogProject.Core.Models.ViewModels;
 using BlogProject.Web.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Security.Claims;
@@ -255,7 +256,7 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
 
     [HttpPost("delete_user_profile")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteUserProfile(string userId)
+    public async Task<IActionResult> DeleteUserProfile(string userId, int page=1)
     {
         var isAdminDeleteOtherUser = User.IsInRole("Administrator") &&
                                      User.FindFirstValue(ClaimTypes.NameIdentifier) != userId;
@@ -274,12 +275,11 @@ public class AccountManagerController(GetUserPermissions permissions, UserClaims
             // Если это текущий пользователь, то нужно выйти из системы
             if (!isAdminDeleteOtherUser)
             {
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                TempData["Success"] = "Ваш профиль успешно удалён";
+                await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
                 return RedirectToAction("Index", "Home");
             }
 
-            return Ok();
+            return RedirectToAction("GetAllUsers", new{page});
         }
         catch (Exception ex)
         {

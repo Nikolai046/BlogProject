@@ -50,7 +50,7 @@ function addComment(articleId) {
             $('#commentText-' + articleId).val('');
 
             //  Удаляем все скрытые токены из секции комментариев
-            commentsSection.find('input[name="__RequestVerificationToken"]').remove();
+            //commentsSection.find('input[name="__RequestVerificationToken"]').remove();
 
         },
         error: function (xhr) {

@@ -18,59 +18,101 @@
     }
     else
     {
-<div class="table-responsive">
-    <table class="table-striped table-hover table">
-        <thead class="table-dark">
-            <tr>
-                <th>Имя и фамилия</th>
-                <th>Email</th>
-                <th>Роль</th>
-                <th>Количество статей</th>
-                <th>Теги</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
+        <!-- Таблица для больших экранов -->
+        <div class="table-responsive d-none d-md-block">
+            <table class="table-striped table-hover table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Имя и фамилия</th>
+                        <th>Email</th>
+                        <th>Роль</th>
+                        <th>Количество статей</th>
+                        <th>Теги</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr class="clickable-row" data-href="@Url.Action("ArticlesByAuthor", "AccountManager", new { userId = user.UserId })" style="cursor: pointer;">
+                            <td>@user.FirstName @user.LastName</td>
+                            <td>@user.Email</td>
+                            <td>@user.Roles.FirstOrDefault()</td>
+                            <td>@user.ArticleCount</td>
+                            <td>
+                                @if (user.Tag?.Any() == true)
+                                {
+                                    foreach (var tag in user.Tag)
+                                    {
+                                        <span class="badge bg-primary me-1">@tag.Text</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Тегов нет</span>
+                                }
+                            </td>
+                            <td class="no-click">
+                                <div class="d-flex gap-2">
+                                    @if (user.Deletable)
+                                    {
+                                        <a asp-action="UpdateUserProfile" asp-controller="AccountManager" asp-route-userid="@user.UserId" class="btn btn-sm btn-outline-primary" title="Редактировать пользователя">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form asp-action="DeleteUserProfile" asp-controller="AccountManager" asp-route-userid="@user.UserId" asp-route-page="@currentPage" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить пользователя" onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить этого пользователя?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Адаптированная версия для мобильных устройств -->
+        <div class="d-md-none">
             @foreach (var user in Model.Users)
             {
-                <tr class="clickable-row" data-href="@Url.Action("ArticlesByAuthor", "AccountManager", new { userId = user.UserId })" style="cursor: pointer;">
-                   <td>@user.FirstName @user.LastName</td>
-                    <td>@user.Email</td>
-                    <td>@user.Roles.FirstOrDefault()</td>
-                    <td>@user.ArticleCount</td>
-                    <td>
-                        @if (user.Tag?.Any() == true)
-                        {
-                            foreach (var tag in user.Tag)
+                <div class="card mb-3" style="cursor: pointer;" onclick="window.location.href='@Url.Action("ArticlesByAuthor", "AccountManager", new { userId = user.UserId })'">
+                    <div class="card-body">
+                        <h5 class="card-title">@user.FirstName @user.LastName</h5>
+                        <p class="card-text"><strong>Email:</strong> @user.Email</p>
+                        <p class="card-text"><strong>Роль:</strong> @user.Roles.FirstOrDefault()</p>
+                        <p class="card-text"><strong>Количество статей:</strong> @user.ArticleCount</p>
+                        <p class="card-text"><strong>Теги:</strong>
+                            @if (user.Tag?.Any() == true)
                             {
-                                <span class="badge bg-primary me-1">@tag.Text</span>
+                                foreach (var tag in user.Tag)
+                                {
+                                    <span class="badge bg-primary me-1">@tag.Text</span>
+                                }
                             }
-                        }
-                        else
-                        {
-                            <span class="text-muted">Тегов нет</span>
-                        }
-                    </td>
-                    <td class="no-click text-nowrap" style="pointer-events: auto;">
+                            else
+                            {
+                                <span class="text-muted">Тегов нет</span>
+                            }
+                        </p>
                         @if (user.Deletable)
                         {
-                            <a asp-action="UpdateUserProfile" asp-controller="AccountManager" asp-route-userid="@user.UserId" class="btn-link action-icon border-0 bg-transparent p-0"
-                               title="Редактировать пользователя">
-                                <i class="bi bi-pencil-square text-primary"></i>
-                            </a>
-                            <form asp-action="DeleteArticle" asp-controller="AccountManager" asp-route-id="@user.UserId" asp-route-page="@currentPage" method="post" class="d-inline">
-                                <button type="submit" class="btn-link action-icon border-0 bg-transparent p-0" title="Удалить пользователя"
-                                        onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить этого пользователя?');">
-                                    <i class="bi bi-trash text-danger"></i>
-                                </button>
-                            </form>
+                            <div class="d-flex gap-2 mt-2">
+                                <a asp-action="UpdateUserProfile" asp-controller="AccountManager" asp-route-userid="@user.UserId" class="btn btn-sm btn-outline-primary" title="Редактировать пользователя" onclick="event.stopPropagation();">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form asp-action="DeleteUserProfile" asp-controller="AccountManager" asp-route-userid="@user.UserId" asp-route-page="@currentPage" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить пользователя" onclick="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить этого пользователя?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         }
-                    </td>
-                </tr>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
-</div>
+        </div>
 
         <!-- Пагинация -->
         <nav aria-label="Пагинация пользователей" class="mt-4">
@@ -82,7 +124,7 @@
                     </li>
                 }
                 <li class="page-item disabled">
-                    <span class="page-link">Страница @currentPage</span>
+                    <span class="pageLaw-link">Страница @currentPage</span>
                 </li>
                 @if (Model.HasMore)
                 {
@@ -97,20 +139,10 @@
 
 @section Scripts {
     <script>
-        // Подсветка строки при наведении
+        // Подсветка строки при наведении (только для таблицы)
         document.querySelectorAll('.clickable-row').forEach(row => {
             row.addEventListener('mouseover', () => row.classList.add('table-active'));
             row.addEventListener('mouseout', () => row.classList.remove('table-active'));
-            
-            // Обработчик клика для всей строки
-            row.addEventListener('click', function(e) {
-                // Игнорируем клики по кнопкам и элементам с классом no-click
-                if (!e.target.closest('.no-click') && 
-                    e.target.tagName !== 'BUTTON' && 
-                    e.target.tagName !== 'A') {
-                    window.location.href = this.dataset.href;
-                }
-            });
         });
     </script>
 }

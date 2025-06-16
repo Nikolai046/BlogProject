@@ -388,7 +388,7 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
-        Log.Information("AdministratorMethods: Комментарий добавлен к статье {ArticleId} пользователем {UserId}", articleId, currentUserId);
+        Log.Information("AdministratorMethods: Комментарий {Id} добавлен к статье {ArticleId} пользователем {UserId}",comment.Id , articleId, currentUserId);
     }
 
     public async Task EditCommentAsync(int commentId, CommentViewModel model)

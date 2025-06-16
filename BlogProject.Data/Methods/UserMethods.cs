@@ -384,7 +384,7 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
-        Log.Information("UserMethods: Комментарий добавлен к статье {ArticleId} пользователем {UserId}", articleId, currentUserId);
+        Log.Information("AdministratorMethods: Комментарий {Id} добавлен к статье {ArticleId} пользователем {UserId}", comment.Id, articleId, currentUserId);
     }
 
     public async Task EditCommentAsync(int commentId, CommentViewModel model)
