@@ -33,7 +33,7 @@ public class LoginController(UserManager<User> userManager, UserClaimsService cl
             }
 
             // Проверка пароля без входа в систему
-            var isValidPassword = await userManager.CheckPasswordAsync(user, model.Password);
+            var isValidPassword = await userManager.CheckPasswordAsync(user, model.Password!);
             if (!isValidPassword)
             {
                 ModelState.AddModelError(string.Empty, "Неверный пароль");

@@ -12,4 +12,8 @@
 	  <None Remove="Models\ViewModels\DTO\**" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Models\RequestMoels\" />
+	</ItemGroup>
+
 </Project>

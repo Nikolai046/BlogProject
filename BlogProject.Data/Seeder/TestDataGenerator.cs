@@ -43,7 +43,7 @@ public class TestDataGenerator(UserManager<User> userManager, RoleManager<Identi
                     FirstName = "Sidor",
                     LastName = "Sidorov",
                     Email = "user@example.com",
-                    UserName = "sidor.sidorov@example.com"
+                    UserName = "user@example.com"
                 },
                 "User",
                 "123456"
