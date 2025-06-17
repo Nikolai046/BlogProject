@@ -3,8 +3,8 @@ using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using FluentValidation;
 using Serilog;
-using Microsoft.OpenApi;
 //using Scalar.AspNetCore.OpenApi;
 
 try
@@ -25,6 +25,9 @@ try
             .UseLazyLoadingProxies()
     );
 
+    // Подключаем валидацию
+    builder.Services.AddFluentValidationAutoValidation();
+
     // Настраиваем параметры идентификации из конфигурации
     builder.Services.Configure<IdentityOptions>(
         builder.Configuration.GetSection("Identity"));
@@ -40,11 +43,10 @@ try
     // Добавляем поддержку контроллеров
     builder.Services.AddControllers();
 
-    // Добавляем службу OpenAPI в коллекцию служб приложения
-     //builder.Services.AddOpenApi();
-
     // Добавляем поддержку для автоматической генерации документации API
     builder.Services.AddEndpointsApiExplorer();
+
+    // Добавляем поддержку Swagger для документации API
     builder.Services.AddSwaggerGen();
 
     // Строим приложение
@@ -56,20 +58,11 @@ try
 
         app.UseSwagger();
         app.UseSwaggerUI();
-        //app.MapScalarApiReference(options =>
-        //        options
-        //            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient))
-        //    .WithOpenApi();
-
-        //app.UseSwagger(options =>
-        //{
-        //    options.RouteTemplate = "/swagger/v1/swagger.json";
-        //});
-        //app.MapScalarApiReference();
 
         app.MapScalarApiReference(options =>
         {
-            options.WithOpenApiRoutePattern("/swagger/swagger.json");
+            options.WithOpenApiRoutePattern("/swagger/v1/swagger.json");
+            options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
         });
 
     }
