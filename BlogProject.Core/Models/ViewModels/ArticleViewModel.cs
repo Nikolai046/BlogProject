@@ -25,6 +25,5 @@ public class ArticleViewModel
 
     public IEnumerable<TagViewModel>? Tag { get; set; }
 
-    //public List<TagViewModel> Tag { get; set; } = [];
     public IEnumerable<CommentViewModel>? Comments { get; set; }
 }

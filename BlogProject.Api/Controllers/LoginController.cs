@@ -11,7 +11,7 @@ namespace BlogProject.Api.Controllers;
 [AllowAnonymous]
 [Route("api/[controller]")]
 [ApiController]
-public class LoginController(GetUserPermissions permissions, SignInManager<User> signInManager, JwtService jwtService) : ControllerBase
+public class LoginController(SignInManager<User> signInManager, JwtService jwtService) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<ActionResult> Login(LoginRequest request)
