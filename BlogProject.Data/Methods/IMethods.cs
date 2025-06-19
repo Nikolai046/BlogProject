@@ -10,21 +10,21 @@ public interface IMethods
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetAllArticlesAsync(int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool, int)> GetAllArticlesAsync(int page, int pageSize = 10);
 
     /// <summary>
     /// Получает список всех статей всех пользователей с фильтрацией по тегам с пагинацией.
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool, int)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10);
 
     /// <summary>
     /// Получает список статей конкретного пользователя с пагинацией.
     /// Возвращает список ArticleViewModel и флаг hasMore.
     /// Флаг Deletable и Editable зависит от роли и владения.
     /// /// </summary>
-    Task<(List<ArticleViewModel>, bool)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10);
+    Task<(List<ArticleViewModel>, bool, int)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10);
 
     /// <summary>
     /// Получает статью по указанному идентификатору.
@@ -79,7 +79,7 @@ public interface IMethods
     /// Флаг Deletable зависит от роли и владения.
     /// </summary>
     /// <returns>Список пользователей.</returns>
-    Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10);
+    Task<(List<UserViewModel>, bool, int)> GetAllUsersAsync(int page, int pageSize = 10);
 
     /// <summary>
     /// Асинхронно получает информацию о пользователе.

@@ -11,7 +11,7 @@ namespace BlogProject.Data.Methods;
 public class ModeratorMethods(ApplicationDbContext context, string? currentUserId, UserManager<User> userManager)
     : IMethods
 {
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesAsync(int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool, int)> GetAllArticlesAsync(int page, int pageSize = 10)
     {
         var allArticles = context.Articles
             .Include(a => a.User)
@@ -23,7 +23,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Получаем общее количество для пагинации
         var totalCount = await allArticles.CountAsync();
 
-        if (totalCount == 0) return ([], false);
+        if (totalCount == 0) return ([], false, 0);
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -63,10 +63,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         var hasMore = totalCount > page * pageSize;
 
-        return (articles, hasMore);
+        return (articles, hasMore, lastPage);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool, int)> GetAllArticlesByTagAsync(List<string> tags, int page, int pageSize = 10)
     {
         // Нормализация тегов: обрезка пробелов и приведение к верхнему регистру
         var normalizedTags = tags
@@ -77,7 +77,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         if (normalizedTags.Count == 0)
         {
-            return ([], false);
+            return ([], false, 0);
         }
 
         var allArticles = context.Articles
@@ -85,14 +85,14 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             .Include(a => a.Comments)!
             .ThenInclude(c => c.User)
             .Include(a => a.Tags)
-            .Where(a => a.Tags!.Any(t => normalizedTags.Contains(t.Name.ToUpper())))
+            .Where(a => a.Tags!.Any(t => normalizedTags.Contains(t.Name!.ToUpper())))
             .OrderByDescending(a => a.CreatedDate)
             .AsQueryable();
 
         // Получаем общее количество
         var totalCount = await allArticles.CountAsync();
 
-        if (totalCount == 0) return ([], false);
+        if (totalCount == 0) return ([], false, 0);
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -132,10 +132,10 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         var hasMore = totalCount > page * pageSize;
 
-        return (articles, hasMore);
+        return (articles, hasMore, lastPage);
     }
 
-    public async Task<(List<ArticleViewModel>, bool)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10)
+    public async Task<(List<ArticleViewModel>, bool, int)> GetArticlesByUserIdAsync(string? userId, int page, int pageSize = 10)
     {
         // Проверка UserID
         var targetUserId = userId ?? currentUserId;
@@ -152,7 +152,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         // Получаем общее количество
         var totalCount = allArticles.Count();
 
-        if (totalCount == 0) return ([], false);
+        if (totalCount == 0) return ([], false, 0);
 
         // Если запрошена страница превышающая общее количество страниц, устанавливаем её на последнюю
         var lastPage = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -204,7 +204,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
 
         var hasMore = (allArticles.Count / pageSize - page) >= 0;
 
-        return (result, hasMore);
+        return (result, hasMore, lastPage);
     }
 
     public async Task<ArticleViewModel?> GetArticleByIdAsync(int articleId)
@@ -280,7 +280,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             var normalizedTagName = tagName!.ToUpper();
 
             var existingTag = await context.Tags
-                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
+                .FirstOrDefaultAsync(t => t.Name!.ToUpper() == normalizedTagName);
 
             if (existingTag != null)
             {
@@ -333,7 +333,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
             var normalizedTagName = tagName.ToUpper();
 
             var existingTag = await context.Tags
-                .FirstOrDefaultAsync(t => t.Name.ToUpper() == normalizedTagName);
+                .FirstOrDefaultAsync(t => t.Name!.ToUpper() == normalizedTagName);
 
             if (existingTag != null)
             {
@@ -415,7 +415,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         Log.Information("ModeratorMethods: Комментарий {CommentId} удален пользователем {UserId}", commentId, currentUserId);
     }
 
-    public async Task<(List<UserViewModel>, bool)> GetAllUsersAsync(int page, int pageSize = 10)
+    public async Task<(List<UserViewModel>, bool, int)> GetAllUsersAsync(int page, int pageSize = 10)
     {
         var allUsers = context.Users
             .Where(u => u.Id != currentUserId)
@@ -485,7 +485,7 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         }
 
         var hasMore = totalCount > page * pageSize;
-        return (users, hasMore);
+        return (users, hasMore, lastPage);
     }
 
     public async Task<(UserViewModel, List<string>)> GetUserInfoAsync(string? userId = null)
