@@ -127,6 +127,7 @@ void ConfigureJwtAuthentication(WebApplicationBuilder builder)
 
 void ConfigureMiddleware(WebApplication app)
 {
+    app.UseCustomExceptionHandling();
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -138,7 +139,7 @@ void ConfigureMiddleware(WebApplication app)
         });
     }
 
-    app.UseCustomExceptionHandling();
+    
     
     app.UseHttpsRedirection();
     app.UseAuthentication();

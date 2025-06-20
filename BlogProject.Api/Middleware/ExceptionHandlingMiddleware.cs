@@ -33,14 +33,22 @@ public class ExceptionHandlingMiddleware
         try
         {
             await _next(context);
-            if (context.Response.StatusCode is >= 400 and <= 599)
+            if (context.Response.StatusCode is >= 400 and <= 599 && !context.Response.HasStarted)
             {
                 await HandleStatusCodeAsync(context, requestId, referer, userAgent, user, clientIp);
             }
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(context, ex, requestId, referer, userAgent, user, method, clientIp, queryString);
+            if (!context.Response.HasStarted)
+            {
+                await HandleExceptionAsync(context, ex, requestId, referer, userAgent, user, method, clientIp, queryString);
+            }
+            else
+            {
+                Log.Warning("Cannot handle exception: Response has already started for RequestID: {RequestId}", requestId);
+            }
+
         }
     }
 
@@ -76,11 +84,10 @@ public class ExceptionHandlingMiddleware
     {
         var (statusCode, message) = GetExceptionDetails(exception);
 
-        Log.Error(exception,
-            "ExceptionHandlingMiddleware: Ошибка {StatusCode} - " +
-            "\nRequestID: {RequestId}, \nUser: {User}, \nМетод: {Method}, \nIP: {ClientIp}, \nПуть: {Path}, " +
-            "\nИсточник: {Referer}, \nUserAgent: {UserAgent}, \nQueryString: {QueryString}",
-            requestId, user, method, clientIp, context.Request.Path, referer, userAgent, queryString
+        Log.Error("ExceptionHandlingMiddleware: Ошибка {StatusCode} - {Message}" +
+                  "\nRequestID: {RequestId}, \nUser: {User}, \nМетод: {Method}, \nIP: {ClientIp}, \nПуть: {Path}, " +
+                  "\nИсточник: {Referer}, \nUserAgent: {UserAgent},\nQueryString: {QueryString}",
+             statusCode, message, requestId, user, method, clientIp, context.Request.Path, referer, userAgent, queryString
         );
 
         await WriteJsonErrorResponse(context, statusCode, message, requestId);

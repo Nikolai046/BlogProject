@@ -25,7 +25,7 @@ public class LoginController(UserManager<User> userManager, JwtService jwtServic
 
         try
         {
-            var token = jwtService.GenerateToken(request.Email);
+            var token = jwtService.GenerateToken(user.Id);
             Log.Information("LoginController: Пользователь {Email} авторизовался", request.Email);
             return Ok(new { Message = "Успешно вошли в систему.", AccessToken = token });
         }

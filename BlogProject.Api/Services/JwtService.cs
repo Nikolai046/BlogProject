@@ -11,7 +11,7 @@ public class JwtService(IConfiguration configuration)
     private readonly string? _issuer = configuration["Jwt:Issuer"];
     private readonly string? _audience = configuration["Jwt:Audience"];
 
-    public string GenerateToken(string username)
+    public string GenerateToken(string userId)
     {
         if (string.IsNullOrWhiteSpace(_secretKey))
             throw new InvalidOperationException("JWT secret key is not configured. Проверьте, что в appsettings.json или переменных окружения задан Jwt:Key.");
@@ -27,7 +27,7 @@ public class JwtService(IConfiguration configuration)
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim(JwtRegisteredClaimNames.Sub, userId),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

@@ -1,4 +1,5 @@
-﻿using BlogProject.Core.CustomException;
+﻿using System.Data;
+using BlogProject.Core.CustomException;
 using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -371,6 +372,8 @@ public class UserMethods(ApplicationDbContext context, string? currentUserId, Us
 
         if (string.IsNullOrWhiteSpace(model.Text))
             throw new AppException("Текст комментария не может быть пустым", 400);
+
+        var article = await context.Articles.FindAsync(articleId) ?? throw new NotFoundException($"Статья Id: {articleId} для добавления комментария не найдена");
 
         var comment = new Comment
         {

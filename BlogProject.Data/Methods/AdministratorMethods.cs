@@ -378,6 +378,8 @@ public class AdministratorMethods(ApplicationDbContext context, string? currentU
         if (string.IsNullOrWhiteSpace(model.Text))
             throw new AppException("Текст комментария не может быть пустым", 400);
 
+        var article = await context.Articles.FindAsync(articleId) ?? throw new NotFoundException($"Статья Id: {articleId} для добавления комментария не найдена");
+
         var comment = new Comment
         {
             Text = model.Text.Trim(),

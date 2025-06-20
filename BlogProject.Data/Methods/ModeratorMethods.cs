@@ -372,6 +372,8 @@ public class ModeratorMethods(ApplicationDbContext context, string? currentUserI
         if (string.IsNullOrWhiteSpace(model.Text!.Trim()))
             throw new AppException("Текст комментария не может быть пустым", 400);
 
+        var article = await context.Articles.FindAsync(articleId) ?? throw new NotFoundException($"Статья Id: {articleId} для добавления комментария не найдена");
+
         var comment = new Comment
         {
             Text = model.Text.Trim(),
