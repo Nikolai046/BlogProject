@@ -11,7 +11,7 @@ public class JwtService(IConfiguration configuration)
     private readonly string? _issuer = configuration["Jwt:Issuer"];
     private readonly string? _audience = configuration["Jwt:Audience"];
 
-    public string GenerateToken(string userId)
+    public string GenerateToken(string userId, List<string> roles)
     {
         if (string.IsNullOrWhiteSpace(_secretKey))
             throw new InvalidOperationException("JWT secret key is not configured. Проверьте, что в appsettings.json или переменных окружения задан Jwt:Key.");
@@ -25,11 +25,16 @@ public class JwtService(IConfiguration configuration)
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
+       {
+           new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, userId),
+           new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+       };
+
+        foreach (var role in roles)
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _issuer,

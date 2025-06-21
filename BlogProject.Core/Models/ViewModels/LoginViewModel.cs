@@ -7,7 +7,7 @@ public class LoginViewModel
     [DataType(DataType.EmailAddress)]
     [Required(ErrorMessage = "Пожалуйста, введите корректный email.")]
     [Display(Name = "e-mail")]
-    public required string Email { get; init; }
+    public string Email { get; init; }
 
     [StringLength(100, ErrorMessage = "Поле {0} должно иметь минимум {2} и максимум {1} символов.", MinimumLength = 5)]
     [DataType(DataType.Password)]

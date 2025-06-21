@@ -22,10 +22,11 @@ public class LoginController(UserManager<User> userManager, JwtService jwtServic
         {
             return Unauthorized(new { ErrorMessage = "LoginController: Неверные учетные данные." });
         }
+        var roles = (await userManager.GetRolesAsync(user)).ToList();
 
         try
         {
-            var token = jwtService.GenerateToken(user.Id);
+            var token = jwtService.GenerateToken(user.Id, roles);
             Log.Information("LoginController: Пользователь {Email} авторизовался", request.Email);
             return Ok(new { Message = "Успешно вошли в систему.", AccessToken = token });
         }

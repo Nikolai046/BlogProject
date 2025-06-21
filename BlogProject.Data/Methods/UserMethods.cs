@@ -1,11 +1,11 @@
-﻿using System.Data;
-using BlogProject.Core.CustomException;
+﻿using BlogProject.Core.CustomException;
 using BlogProject.Core.Models.ViewModels;
 using BlogProject.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
+using System.Data;
 
 namespace BlogProject.Data.Methods;
 

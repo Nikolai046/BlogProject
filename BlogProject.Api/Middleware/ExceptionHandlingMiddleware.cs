@@ -1,24 +1,11 @@
 ﻿using BlogProject.Core.CustomException;
-using Microsoft.AspNetCore.Http;
 using Serilog;
-using System;
-using System.Net;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace BlogProject.Api.Middleware;
 
-public class ExceptionHandlingMiddleware
+public class ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironment env)
 {
-    private readonly RequestDelegate _next;
-    private readonly IWebHostEnvironment _env;
-
-    public ExceptionHandlingMiddleware(RequestDelegate next, IWebHostEnvironment env)
-    {
-        _next = next;
-        _env = env;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         // Собираем контекстные данные для логов
@@ -32,7 +19,7 @@ public class ExceptionHandlingMiddleware
 
         try
         {
-            await _next(context);
+            await next(context);
             if (context.Response.StatusCode is >= 400 and <= 599 && !context.Response.HasStarted)
             {
                 await HandleStatusCodeAsync(context, requestId, referer, userAgent, user, clientIp);
@@ -48,7 +35,6 @@ public class ExceptionHandlingMiddleware
             {
                 Log.Warning("Cannot handle exception: Response has already started for RequestID: {RequestId}", requestId);
             }
-
         }
     }
 
@@ -64,8 +50,8 @@ public class ExceptionHandlingMiddleware
         var message = GetStatusMessage(statusCode);
 
         Log.Warning(
-            "ExceptionHandlingMiddleware: HTTP {StatusCode} - \nRequestID: {RequestId}, \nUser: {User}, \nIP: {ClientIp}, \nПуть: {Path}, \nИсточник: {Referer}, \nUserAgent: {UserAgent}",
-            statusCode, requestId, user, clientIp, context.Request.Path, referer, userAgent
+            "ExceptionHandlingMiddleware: HTTP {StatusCode} - {Message}\nRequestID: {RequestId}, \nUser: {User}, \nIP: {ClientIp}, \nПуть: {Path}, \nИсточник: {Referer}, \nUserAgent: {UserAgent}",
+            statusCode, message, requestId, user, clientIp, context.Request.Path, referer, userAgent
         );
 
         await WriteJsonErrorResponse(context, statusCode, message, requestId);
@@ -102,7 +88,7 @@ public class ExceptionHandlingMiddleware
             DatabaseException dbEx => (503, dbEx.Message),
             ValidationException valEx => (400, valEx.Message),
             AppException appEx => (appEx.StatusCode, appEx.Message),
-            _ => (500, _env.IsDevelopment() ? exception.Message : "Произошла ошибка.")
+            _ => (500, env.IsDevelopment() ? exception.Message : "Произошла ошибка.")
         };
     }
 

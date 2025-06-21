@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Text;
-using Microsoft.OpenApi.Models;
 
 try
 {
@@ -32,7 +32,7 @@ try
     // Логируем информацию о запуске приложения
     Log.Information("\n\n\nПриложение {AppName} запускается...", "BlogProject.Api");
 
-    // Запускаем приложение асинхронно
+    // Запускаем приложение
     await app.RunAsync();
 }
 catch (Exception ex)
@@ -139,8 +139,6 @@ void ConfigureMiddleware(WebApplication app)
         });
     }
 
-    
-    
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
